@@ -17,8 +17,7 @@ function [A,b,guard] = jProject(Asp,bsp,n)
 %
 % This code is part of the implementation of the algorithm proposed in:
 % Tzanis Anevlavis and Paulo Tabuada, "Computing controlled invariant sets
-% in two moves", Submitted to the 58th IEEE Conference on Decision and 
-% Control 2019 (CDC '19),
+% in two moves", in 2019 IEEE Conference on Decision and Control, 
 % and is publicly available at: https://github.com/janis10/cis2m
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.

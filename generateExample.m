@@ -15,8 +15,7 @@
 %
 % This code is part of the implementation of the algorithm proposed in:
 % Tzanis Anevlavis and Paulo Tabuada, "Computing controlled invariant sets
-% in two moves", Submitted to the 58th IEEE Conference on Decision and 
-% Control 2019 (CDC '19),
+% in two moves", in 2019 IEEE Conference on Decision and Control,
 % and is publicly available at: https://github.com/janis10/cis2m
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
@@ -77,8 +76,11 @@ Pmatinv = inv(Pmat);
 % Domain in Brunovsky coordinates:
 Gc = G*Pmatinv;
 % System in Brunovsky Normal Form:
-Ac = Pmat*A*Pmatinv;
-Bc = Pmat*B;
-% State-feedback
-Ac(end,:) = zeros(1,size(Ac,2));
+% Ac = Pmat*A*Pmatinv;
+% Bc = Pmat*B;
+% % State-feedback
+% Ac(end,:) = zeros(1,size(Ac,2));
+Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
+Bc = [zeros(n-1,1); 1];
+
 disp('..done!')
