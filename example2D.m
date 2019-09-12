@@ -36,12 +36,12 @@
 % This function makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, ZÃ¼rich, Switzerland, July 17-19 2013, pp. 502-510, 
+% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
 % Original system:
-Ao = [1.2 1; 0 1.2]; Bo = [0.5; 0.3];
+Ao = [1.5 1; 0 1]; Bo = [0.5; 0.25];
 % State constraints:
 Go =[   0.9147   -0.5402;
         0.2005    0.6213;
@@ -104,4 +104,4 @@ cis = cisExt.projection((1:n-1));
 system = LTISystem('A',Ao,'B',Bo);
 mcisEx = system.invariantSet('X',D,'U',U,'maxIterations',300);
 % Plotting:
-figure; plot(D, 'color', 'red', mcisEx, 'color', 'lightblue', cis, 'color', 'lightgreen')
+figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')

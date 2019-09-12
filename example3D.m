@@ -42,7 +42,7 @@
 % Original system and polyhedron:
 Ao = [0 1 -2; 3 -4 5; -6 7 8]; Bo = [-1; 2; 4];
 
-G = [-0.9497    0.3212   -0.8258;
+Go = [-0.9497    0.3212   -0.8258;
      -0.1578   -0.2323    0.6042;
      -0.6318    0.2547    0.9783;
 	  0.4516   -0.9567   -0.8661;
@@ -110,8 +110,9 @@ Gc = G*Pmatinv;
 Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
 Bc = [zeros(n-1,1); 1];
 disp('..done!')
+
 % Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,Fo);
+[mcisA,mcisb] = mcisCF_boundBox(Ac,Bc,Gc,Fo);
 [cisA,cisb,guard] = jProject(mcisA,mcisb,n);
 cisMat = [cisA*Pmat cisb];
 cis = Polyhedron('H', cisMat);
@@ -121,19 +122,19 @@ cis = cis.minHRep;
 system = LTISystem('A',Ao,'B',Bo);
 mcisEx = system.invariantSet('X',D,'maxIterations',100);
 % Plotting:
-figure; plot(D, 'color', 'red', mcisEx, 'color', 'lightblue', cis, 'color', 'lightgreen')
-figure; plot(mcisEx, 'color', 'lightblue', cis, 'color', 'lightgreen')
-figure; plot(cis,'color','lightgreen')
+figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(mcisEx, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(cis,'color','white')
 
 D1 = D.projection(2:3);
 cis1 = cis.projection(2:3);
 mcisEx1 = mcisEx.projection(2:3);
-figure; plot(D1, 'color', 'red',mcisEx1, 'color', 'lightblue', cis1, 'color', 'lightgreen')
+figure; plot(D1, 'color', 'blue',mcisEx1, 'color', 'lightgray', cis1, 'color', 'white')
 D2 = D.projection([1,3]);
 cis2 = cis.projection([1,3]);
 mcisEx2 = mcisEx.projection([1,3]);
-figure; plot(D2, 'color', 'red', mcisEx2, 'color', 'lightblue', cis2, 'color', 'lightgreen')
+figure; plot(D2, 'color', 'blue', mcisEx2, 'color', 'lightgray', cis2, 'color', 'white')
 D3 = D.projection(1:2);
 cis3 = cis.projection(1:2);
 mcisEx3 = mcisEx.projection(1:2);
-figure; plot(D3, 'color', 'red', mcisEx3, 'color', 'lightblue', cis3, 'color', 'lightgreen')
+figure; plot(D3, 'color', 'blue', mcisEx3, 'color', 'lightgray', cis3, 'color', 'white')
