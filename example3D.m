@@ -35,7 +35,7 @@
 % This function makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
+% Conference, ZÃ¼rich, Switzerland, July 17-19 2013, pp. 502-510, 
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
@@ -112,7 +112,7 @@ Bc = [zeros(n-1,1); 1];
 disp('..done!')
 
 % Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF_boundBox(Ac,Bc,Gc,Fo);
+[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,Fo);
 [cisA,cisb,guard] = jProject(mcisA,mcisb,n);
 cisMat = [cisA*Pmat cisb];
 cis = Polyhedron('H', cisMat);
