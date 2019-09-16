@@ -112,6 +112,7 @@ for i = 1:n
     gtildeCell{i}(Ridx,:) = [];
     gtildeCell{i} = gtildeCell{i}';
     
+    tempA1(Ridx,:)=[];
     tempB1 = tempA1*Bhat;
     tempA1 = tempA1*Ahat;
 end
