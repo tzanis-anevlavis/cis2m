@@ -112,7 +112,7 @@ Bc = [zeros(n-1,1); 1];
 disp('..done!')
 
 % Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,Fo);
+[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F);
 [cisA,cisb,guard] = jProject(mcisA,mcisb,n);
 cisMat = [cisA*Pmat cisb];
 cis = Polyhedron('H', cisMat);
