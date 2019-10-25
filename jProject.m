@@ -1,4 +1,4 @@
-function [A,b,guard] = jProject(Asp,bsp,n)
+function [A,b] = jProject(Asp,bsp,n)
 
 %% Authors: Tzanis Anevlavis, Paulo Tabuada
 % Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
@@ -57,9 +57,9 @@ b = full(bsp);
 mcisHmat = [A b];
 P = Polyhedron('H',mcisHmat);
 
-disp('Obtaining minimum representation..')
+% disp('Obtaining minimum representation..')
 P = P.minHRep;
-disp('..done!')
+% disp('..done!')
 
 mcisHmat = P.H;
 A = mcisHmat(:,1:end-1);
@@ -80,7 +80,8 @@ limit = size(A,1) + ceil(0.125*N);
 A = A(:,[1:f_elim-1 f_elim+1:end f_elim]);
 
 cnt = m;
-while (cnt>0 && N+growth<limit)    
+while (cnt>0 && N+growth<limit)
+% while (cnt>0)
     % FME:
     tmp = fourier([A b],1:V-1);
     A = tmp(:,1:end-1);
@@ -109,11 +110,8 @@ while (cnt>0 && N+growth<limit)
 end
 
 %% If there are variables remaining, use MPT3 projection function.
-guard = false;
 % Check for remaining variables.
-if (cnt>0)
-    guard = true;
-        
+if (cnt>0)        
     % Use projection from MPT:
     disp('Limit exceeded; will use MPT3 projection..')
     tmpP = Polyhedron('H',[A b]);
