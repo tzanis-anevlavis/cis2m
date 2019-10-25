@@ -2,17 +2,19 @@
 %
 %% Authors: Tzanis Anevlavis, Paulo Tabuada
 % Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
-% 
+%
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
-% This program is distributed in the hope that it will be useful;
+%
+% This program is distributed in the hope that it will be useful, but 
+% WITHOUT ANY WARRANTY; without even the implied warranty of 
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 % See the GNU General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
-% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+% along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
 % This code is part of the implementation of the algorithm proposed in:
@@ -31,7 +33,7 @@
 %
 % Original system: x+ = Ao x + Bo
 % State constraints: Go x <= Fo
-% Input constraints: u \in [-1,1].
+% Input constraints: u \in [-umin,umax].
 %
 % This function makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
@@ -40,6 +42,10 @@
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
+close all
+clear
+clc
+
 % Original system:
 Ao = [1.5 1; 0 1]; Bo = [0.5; 0.25];
 % State constraints:
@@ -59,7 +65,9 @@ Fo = [  0.5566;
         0.1099];
 D = Polyhedron('H',[Go Fo]);
 % Input constraints:
-Gu = [1; -1]; Fu = [1; 1];
+umin = -1;
+umax = 1;
+Gu = [1; -1]; Fu = [umax; -umin];
 U = Polyhedron('H',[Gu Fu]);
 % Extended system with input:
 A = [Ao Bo; zeros(1,size(Ao,2)+size(Bo,2))]; B = [zeros(size(Ao,1),1); 1];
@@ -83,14 +91,13 @@ Pmat = q;
 for i = 1:n-1
     Pmat = [q; Pmat*A];
 end
-Pmatinv = inv(Pmat);
 % Domain in Brunovsky coordinates:
-Gc = G*Pmatinv;
+Gc = G/Pmat;
 % System in Brunovsky Normal Form:
 Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
 Bc = [zeros(n-1,1); 1];
 
-% Compute controlled invariant set in two moves:
+%% Compute controlled invariant set in two moves:
 [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F);
 [cisA,cisb,~] = jProject(mcisA,mcisb,n);
 cisMat = [cisA*Pmat cisb];
@@ -99,9 +106,10 @@ cisExt = Polyhedron('H', cisMat);
 cisExt = cisExt.minHRep;
 % Eliminate input u to obtain CIS in the original space:
 cis = cisExt.projection((1:n-1));
-% Compute MCIS using MPT3: 
-% (note: depending on the polyhedron Dsys it might not converge)
+
+%% Compute MCIS using MPT3: 
 system = LTISystem('A',Ao,'B',Bo);
 mcisEx = system.invariantSet('X',D,'U',U,'maxIterations',300);
-% Plotting:
+
+%% Plotting:
 figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')

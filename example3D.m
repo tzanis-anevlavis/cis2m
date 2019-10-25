@@ -2,17 +2,19 @@
 %
 %% Authors: Tzanis Anevlavis, Paulo Tabuada
 % Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
-% 
+%
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
-% 
-% This program is distributed in the hope that it will be useful;
+%
+% This program is distributed in the hope that it will be useful, but 
+% WITHOUT ANY WARRANTY; without even the implied warranty of 
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 % See the GNU General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
-% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+% along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
 % This code is part of the implementation of the algorithm proposed in:
@@ -35,10 +37,14 @@
 % This function makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, ZÃ¼rich, Switzerland, July 17-19 2013, pp. 502-510, 
+% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
+close all
+clear
+clc
+
 % Original system and polyhedron:
 Ao = [0 1 -2; 3 -4 5; -6 7 8]; Bo = [-1; 2; 4];
 
@@ -103,25 +109,25 @@ Pmat = q;
 for i = 1:n-1
     Pmat = [q; Pmat*A];
 end
-Pmatinv = inv(Pmat);
 % Domain in Brunovsky coordinates:
-Gc = G*Pmatinv;
+Gc = G/Pmat;
 % System in Brunovsky Normal Form:
 Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
 Bc = [zeros(n-1,1); 1];
 disp('..done!')
 
-% Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F);
+%% Compute controlled invariant set in two moves:
+[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,Fo);
 [cisA,cisb,guard] = jProject(mcisA,mcisb,n);
 cisMat = [cisA*Pmat cisb];
 cis = Polyhedron('H', cisMat);
 cis = cis.minHRep;
-% Compute MCIS using MPT3:
-% (note: depending on the polyhedron D it might not converge)
+
+%% Compute MCIS using MPT3:
 system = LTISystem('A',Ao,'B',Bo);
 mcisEx = system.invariantSet('X',D,'maxIterations',100);
-% Plotting:
+
+%% Plotting:
 figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
 figure; plot(mcisEx, 'color', 'lightgray', cis, 'color', 'white')
 figure; plot(cis,'color','white')
