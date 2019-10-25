@@ -5,7 +5,7 @@ This tool computes a Controlled Invariant Set for Discrete-time Linear Systems. 
 
 Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
-In 2019 IEEE Conference on Decision and Control (CDC).
+In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
 
 In the `paper-examples` folder you can find the files that replicate the two examples of the above paper. 
 
