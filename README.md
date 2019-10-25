@@ -1,16 +1,15 @@
 # cis2m
 ## Computing Controlled Invariant Sets in Two Moves
 
-This code is part of the implementation of the algorithm proposed in:
+This tool computes a Controlled Invariant Set for Discrete-time Linear Systems. It is ab implementation the algorithm proposed in:
 
 Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
 In 2019 IEEE Conference on Decision and Control (CDC).
 
-For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
-
-This GitHub repository contains the MATLAB code for computing a Controlled Invariant Set for Discrete-time Linear Systems.
 In the `paper-examples` folder you can find the files that replicate the two examples of the above paper. 
+
+For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 
 See also: [github repository](http://github.com/janis10/cis2m-hierarchy) for a _Hieararchy_ on computing larger controlled invariant sets for Discrete-time Linear Systems.
 
