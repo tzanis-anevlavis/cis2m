@@ -1,7 +1,7 @@
 # cis2m
 ## Computing Controlled Invariant Sets in Two Moves
 
-This tool computes a Controlled Invariant Set for Discrete-time Linear Systems. It is ab implementation the algorithm proposed in:
+This tool computes a Controlled Invariant Set for Discrete-time Linear Systems. It is an implementation of the algorithm proposed in:
 
 Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
