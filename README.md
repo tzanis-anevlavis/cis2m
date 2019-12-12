@@ -1,7 +1,7 @@
 # cis2m
 ## Computing Controlled Invariant Sets in Two Moves
 
-The provided code computes a Controlled Invariant Set for Discrete-time Linear Systems. It is an implementation in MATLAB of the algorithm proposed in:
+The provided code computes a Controlled Invariant Set of a Polyhedron for Discrete-time Linear Systems. It is an implementation in MATLAB of the algorithm proposed in:
 
 Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
