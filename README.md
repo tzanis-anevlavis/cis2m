@@ -9,9 +9,9 @@ In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.g
 
 In the `paper-examples` folder you can find the files that replicate the two examples of the above paper. 
 
-For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
+#####  More and cooler examples coming soon! Stay tuned!
 
-See also: [github repository](http://github.com/janis10/cis2m-hierarchy) for a _Hieararchy_ on computing larger controlled invariant sets for Discrete-time Linear Systems.
+For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 
 ### References:
 In this version of the code we make use of the Multi-Parametric Toolbox 3.0:
