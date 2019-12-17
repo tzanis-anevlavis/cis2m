@@ -24,12 +24,12 @@
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
+%
+%
+%
 %% Description:
 % This script generates an example in \R^2, in which there also constraints
-% on the input u. To incorporate these constraints we extend the original 
-% state space by one dimension, obtaining the state y = (x,u), and then 
-% introduce a new unconstrained input v governing the evolution of the 
-% state u according to u_{k+1} = u_{k}.
+% on the input u. 
 %
 % Original system: x+ = Ao x + Bo
 % State constraints: Go x <= Fo
@@ -39,7 +39,7 @@
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
 % Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
-% http://control.ee.ethz.ch/ mpt.
+% http://control.ee.ethz.ch/mpt.
 
 %% Exammple Setup:
 close all
@@ -65,47 +65,14 @@ Fo = [  0.5566;
         0.1099];
 D = Polyhedron('H',[Go Fo]);
 % Input constraints:
-umin = -1;
-umax = 1;
+umin = -2;
+umax = 2;
 Gu = [1; -1]; Fu = [umax; -umin];
 U = Polyhedron('H',[Gu Fu]);
-% Extended system with input:
-A = [Ao Bo; zeros(1,size(Ao,2)+size(Bo,2))]; B = [zeros(size(Ao,1),1); 1];
-% Extended polyhedron:
-extMat =[ Go zeros(size(Go,1),size(Gu,2)) Fo; zeros(size(Gu,1),size(Go,2)) Gu Fu];
-De = Polyhedron('H',extMat);
-De.minHRep;
-G = De.A;
-F = De.b;
-
-n = size(A,1);
-m = size(G,1);
-% Bring system in Brunovsky normal form space:
-C = B;
-for i = 1:n-1
-    C = [B A*C];
-end
-Cinv = inv(C);
-q = Cinv(end,:);
-Pmat = q;
-for i = 1:n-1
-    Pmat = [q; Pmat*A];
-end
-% Domain in Brunovsky coordinates:
-Gc = G/Pmat;
-% System in Brunovsky Normal Form:
-Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
-Bc = [zeros(n-1,1); 1];
 
 %% Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F);
-[cisA,cisb,~] = jProject(mcisA,mcisb,n);
-cisMat = [cisA*Pmat cisb];
-% This is in the extended space with input u.
-cisExt = Polyhedron('H', cisMat);
-cisExt = cisExt.minHRep;
-% Eliminate input u to obtain CIS in the original space:
-cis = cisExt.projection((1:n-1));
+cisMat = computeCIS(Ao,Bo,Go,Fo,Gu,Fu,0);
+cis = Polyhedron('H',cisMat);
 
 %% Compute MCIS using MPT3: 
 system = LTISystem('A',Ao,'B',Bo);
