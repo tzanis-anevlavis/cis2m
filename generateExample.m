@@ -34,10 +34,10 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
+% Conference, ZÃ¼rich, Switzerland, July 17-19 2013, pp. 502-510, 
 % http://control.ee.ethz.ch/ mpt.
 
-%% Generate random bounded Polyhedron - with m constraints:
+%% Generate random bounded Polyhedron - with k constraints:
 
 % Needs dimension size 'n', and number of constraints 'k' in workspace.
 
