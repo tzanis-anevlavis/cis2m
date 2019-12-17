@@ -1,4 +1,4 @@
-function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F)
+function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F,verbose)
 
 %% Authors: Tzanis Anevlavis, Paulo Tabuada
 % Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
@@ -37,12 +37,16 @@ function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F)
 % 
 % Returns: matrices mcisA, mcisb such that
 %                   MCIS = {(x,f)| mcisA (x,f)^T <= mcisb}
+%
+%           verbose = 0 - no messages; 1 - displays messages.
 
 n = size(Ac,1); % number of original variables
 m = size(Gc,1); % number of original inequalities
 
 %% Construct MCIS in High Dimension
-disp('Computing MCIS in closed-form, in high dimensional space..')
+if (verbose)
+    disp('Lifting problem to compute controlled invariant set in closed-form . . .')
+end
 
 % Construct Ghat0 and Hhat0:
 tmpG = zeros(m*n,n);
@@ -133,4 +137,6 @@ F = sparse(F);
 
 mcisb = [F; sparse(m*n,1); Ftilde; sparse(hGamma,1)];
 
-disp('..done!')
+if (verbose)
+    disp('..computed!')
+end
