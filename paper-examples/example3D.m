@@ -38,7 +38,7 @@
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
 % Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
-% http://control.ee.ethz.ch/ mpt.
+% http://control.ee.ethz.ch/mpt.
 
 %% Exammple Setup:
 close all
@@ -46,9 +46,9 @@ clear
 clc
 
 % Original system and polyhedron:
-Ao = [0 1 -2; 3 -4 5; -6 7 8]; Bo = [-1; 2; 4];
+A = [0 1 -2; 3 -4 5; -6 7 8]; B = [-1; 2; 4];
 
-Go = [-0.9497    0.3212   -0.8258;
+G = [-0.9497    0.3212   -0.8258;
      -0.1578   -0.2323    0.6042;
      -0.6318    0.2547    0.9783;
 	  0.4516   -0.9567   -0.8661;
@@ -69,7 +69,7 @@ Go = [-0.9497    0.3212   -0.8258;
       0.4463   -0.9400    0.8793;
      -0.3051    0.0713   -0.2911];
 
-Fo = [  0.4106;
+F = [  0.4106;
         0.9843;
         0.9456;
         0.6766;
@@ -90,57 +90,30 @@ Fo = [  0.4106;
         0.5118;
         0.0826];
  
-D = Polyhedron('H',[Go Fo]);
-
-A = Ao; B = Bo;
-G = Go; F = Fo;
-
-n = size(A,1);
-m = size(G,1);
-% Bring system in Brunovsky normal form space:
-disp('Bringing system to Brunovsky form..')
-C = B;
-for i = 1:n-1
-    C = [B A*C];
-end
-Cinv = inv(C);
-q = Cinv(end,:);
-Pmat = q;
-for i = 1:n-1
-    Pmat = [q; Pmat*A];
-end
-% Domain in Brunovsky coordinates:
-Gc = G/Pmat;
-% System in Brunovsky Normal Form:
-Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
-Bc = [zeros(n-1,1); 1];
-disp('..done!')
+D = Polyhedron('H',[G F]);
 
 %% Compute controlled invariant set in two moves:
-[mcisA,mcisb] = mcisCF(Ac,Bc,Gc,Fo);
-[cisA,cisb,guard] = jProject(mcisA,mcisb,n);
-cisMat = [cisA*Pmat cisb];
-cis = Polyhedron('H', cisMat);
-cis = cis.minHRep;
+cisMat = computeCIS(A,B,G,F,[],[],0);
+cis = Polyhedron('H',cisMat);
 
 %% Compute MCIS using MPT3:
-system = LTISystem('A',Ao,'B',Bo);
+system = LTISystem('A',A,'B',B);
 mcisEx = system.invariantSet('X',D,'maxIterations',100);
 
 %% Plotting:
-figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(D, 'color', 'cyan', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
 figure; plot(mcisEx, 'color', 'lightgray', cis, 'color', 'white')
 figure; plot(cis,'color','white')
 
 D1 = D.projection(2:3);
 cis1 = cis.projection(2:3);
 mcisEx1 = mcisEx.projection(2:3);
-figure; plot(D1, 'color', 'blue',mcisEx1, 'color', 'lightgray', cis1, 'color', 'white')
+figure; plot(D1, 'color', 'cyan',mcisEx1, 'color', 'lightgray', cis1, 'color', 'white')
 D2 = D.projection([1,3]);
 cis2 = cis.projection([1,3]);
 mcisEx2 = mcisEx.projection([1,3]);
-figure; plot(D2, 'color', 'blue', mcisEx2, 'color', 'lightgray', cis2, 'color', 'white')
+figure; plot(D2, 'color', 'cyan', mcisEx2, 'color', 'lightgray', cis2, 'color', 'white')
 D3 = D.projection(1:2);
 cis3 = cis.projection(1:2);
 mcisEx3 = mcisEx.projection(1:2);
-figure; plot(D3, 'color', 'blue', mcisEx3, 'color', 'lightgray', cis3, 'color', 'white')
+figure; plot(D3, 'color', 'cyan', mcisEx3, 'color', 'lightgray', cis3, 'color', 'white')
