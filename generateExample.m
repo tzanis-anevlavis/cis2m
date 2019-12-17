@@ -24,8 +24,8 @@
 %
 %
 %% Generate case study:
-% This script generates a random, compact polyhedron in \R^n, with m
-% facets. After that it brings the given system to Brunovsky normal form.
+% This script generates a random, compact polyhedron in \R^n, with k
+% facets, and a linear control system in Brunovsky normal form.
 %
 % Three required variables in workspace (A, B, m):
 % Matrices A,B : LTI system in terms of matrices (A,B).
@@ -39,14 +39,13 @@
 
 %% Generate random bounded Polyhedron - with m constraints:
 
-% Size of system:
-n = size(A,1);
+% Needs dimension size 'n', and number of constraints 'k' in workspace.
 
 disp('Generating polyhedron..')
 D = Polyhedron('H',[0 1 1]);
 while (~D.isBounded && ~D.isEmptySet)
-    G = -1 + (1+1)*rand(m,n);
-    F = rand(m,1);
+    G = -1 + (1+1)*rand(k,n);
+    F = rand(k,1);
     D = Polyhedron('H',[G F]);
 end
 % Make all elements rational numbers with 10-decimal-digit precision.
@@ -59,9 +58,9 @@ F = F./1e10;
 D = Polyhedron('H',[G F]);
 disp('..done!')
 
-%% Bring system in Brunovsky normal form space:
+%% and a system in Brunovsky normal form:
 
-disp('Bringing system to Brunovsky form..')
+disp('System in Brunovsky normal form..')
 C = B;
 for i = 1:n-1
     C = [B A*C];

@@ -112,10 +112,8 @@ Bhat = [BcSP; sparse(n*m,1)];
 gtildeCell = cell(n,1);
 tempA1 = Ghat0*Ahat;
 tempB1 = Ghat0*Bhat;
-% gotta fix this: it keeps by mistake rows of the form: -\lambda_ji < 0
-% can do (n-1) cause at n it's all zero.
-% fixed and updated Git!
-for i = 1:n
+
+for i = 1:(n-1)
     Ridx = (tempB1~=0);
     gtildeCell{i} = tempA1;
     gtildeCell{i}(Ridx,:) = [];

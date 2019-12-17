@@ -1,4 +1,4 @@
-function [A,b] = jProject(Asp,bsp,n)
+function [A,b] = jProject(Asp,bsp,n,verbose)
 
 %% Authors: Tzanis Anevlavis, Paulo Tabuada
 % Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
@@ -28,46 +28,55 @@ function [A,b] = jProject(Asp,bsp,n)
 %
 %
 %% Description:
-% This function takes as input a set {x| Ax <= b} in a higher dimensional 
+% This function takes as input a set {x| Ax <= b} in a higher dimensional
 % space in terms of the matrices A, b, and the dimension n back to which we
 % want to project the aforementioned set.
 %
-% It returns matrices A,b that constitute the set in \R^n.
-% Variable guard is true if MPT3's projection routine was needed.
+% It returns matrices Asp, bsp that constitute the set in \R^n.
 %
+% Inputs:   Asp, bsp such that {x| Asp x <= bsp} in \R^m, m > n.
+%           n = dimension into which the above set is projected.
+%           verbose = 0 - no messages; 1 - displays messages.
+%
+% Outputs: A, b such that {x| A x <= b} is the projected set in \R^n.
 %
 % This function is a variant of the algorithm proposed by:
-% A. Simon and A. King, ``Exploiting sparsity in polyhedral analysis,'' 
-% in Proceedings of the 12th International Conference on Static Analysis, 
+% A. Simon and A. King, ``Exploiting sparsity in polyhedral analysis,''
+% in Proceedings of the 12th International Conference on Static Analysis,
 % ser. SAS'05. Berlin, Heidelberg: Springer- Verlag, 2005, pp. 336-351.
 %
-% Here however, we utilize exact projection instead of approximating it, 
-% and allow the system to grow a little beyond the original size (l:44).
+% Here however, we utilize exact projection instead of approximating it,
+% and allow the system to grow a little beyond the original size (ln:89).
 %
 % This function makes use of the Multi-Parametric Toolbox 3.0:
-% M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
-% ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
+% M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
+% ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
+% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/ mpt.
 
 %% Project back to original space using iterative FME exploiting sparsity.
 
 % First remove redundant inequalities. This is important to have faster
-% projection. 
+% projection.
 A = full(Asp);
 b = full(bsp);
+
+if (verbose)
+    disp('Obtaining minimum representation..')
+end
 mcisHmat = [A b];
 P = Polyhedron('H',mcisHmat);
-
-% disp('Obtaining minimum representation..')
-P = P.minHRep;
-% disp('..done!')
-
+P = P.minHRep();
 mcisHmat = P.H;
 A = mcisHmat(:,1:end-1);
 b = mcisHmat(:,end);
+if (verbose)
+    disp('..done!')
+end
 
-disp('Begin projection back to original space..')
+if (verbose)
+	disp('Begin projection back to original space..')
+end
 
 % Number of constraints.
 N = size(A,1);
@@ -82,8 +91,12 @@ limit = size(A,1) + ceil(0.125*N);
 A = A(:,[1:f_elim-1 f_elim+1:end f_elim]);
 
 cnt = m;
+
+% Classic Fourier-Motzkin Elimination (FME) with smart selection of vars to
+% eliminate, and intermediate removal of redundant inequalities until the 
+% resulting system of inequalities grows beyond some limit. Then use MPT3 
+% built-in tool for remaining variables.
 while (cnt>0 && N+growth<limit)
-% while (cnt>0)
     % FME:
     tmp = fourier([A b],1:V-1);
     A = tmp(:,1:end-1);
@@ -110,16 +123,19 @@ while (cnt>0 && N+growth<limit)
         end
     end
 end
-
-%% If there are variables remaining, use MPT3 projection function.
+% If there are variables remaining, use MPT3 projection function.
 % Check for remaining variables.
-if (cnt>0)        
+if (cnt>0)
     % Use projection from MPT:
-    disp('Limit exceeded; will use MPT3 projection..')
+    if (verbose)
+    	disp('Limit exceeded; will use MPT3 projection..')
+    end
     tmpP = Polyhedron('H',[A b]);
     tmpP = tmpP.projection((1:n),'ifourier');
     A = tmpP.A;
-	b = tmpP.b;
+    b = tmpP.b;
 end
 
-disp('..done!')
+if (verbose)
+	disp('..done!')
+end
