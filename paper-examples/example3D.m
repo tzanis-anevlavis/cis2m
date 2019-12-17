@@ -31,13 +31,13 @@
 % This script generates an example in \R^3, in which there no constraints
 % on the input u. 
 %
-% Original system: x+ = Ao x + Bo
-% State constraints: Go x <= Fo
+% Original system: x+ = A x + B
+% State constraints: G x <= F
 %
 % This function makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari, 
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control 
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510, 
+% Conference, ZÃ¼rich, Switzerland, July 17-19 2013, pp. 502-510, 
 % http://control.ee.ethz.ch/mpt.
 
 %% Exammple Setup:
