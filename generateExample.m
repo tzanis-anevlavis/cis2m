@@ -61,24 +61,6 @@ disp('..done!')
 %% and a system in Brunovsky normal form:
 
 disp('System in Brunovsky normal form..')
-C = B;
-for i = 1:n-1
-    C = [B A*C];
-end
-Cinv = inv(C);
-q = Cinv(end,:);
-Pmat = q;
-for i = 1:n-1
-    Pmat = [q; Pmat*A];
-end
-Pmatinv = inv(Pmat);
-% Domain in Brunovsky coordinates:
-Gc = G*Pmatinv;
-% System in Brunovsky Normal Form:
-% Ac = Pmat*A*Pmatinv;
-% Bc = Pmat*B;
-% % State-feedback
-% Ac(end,:) = zeros(1,size(Ac,2));
 Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
 Bc = [zeros(n-1,1); 1];
 

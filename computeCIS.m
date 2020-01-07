@@ -69,21 +69,6 @@ if (nargin<4)
     error('Not enough input arguments.')
 end
 
-%% Input constraints:
-% If there are input constraints, we extend the system by one dimension to
-% incorporate them.
-guard = false;
-if (~isempty(Gu))
-    guard = true;
-    % Extended system:
-    Ae = [A B; zeros(1,size(A,2)+size(B,2))];
-    Be = [zeros(size(A,1),1); 1];
-    % Extended safe set:
-    Ge = [G zeros(size(G,1),size(Gu,2)); zeros(size(Gu,1),size(G,2)) Gu];
-    Fe = [F; Fu];
-    
-    A = Ae; B = Be; G = Ge; F = Fe;
-end
 n = size(A,1);	% dimension of the system
 
 %% Convert system in Brunovsky normal form space:
@@ -119,13 +104,43 @@ Gc = Gc./1e7;
 Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
 Bc = [zeros(n-1,1); 1];
 
+%% Input constraints:
+% If there are input constraints, we extend the system by one dimension to
+% incorporate them.
+guard = false;
+if (~isempty(Gu))
+    guard = true;
+    
+    % Matrix A in Brunovsky form before feedback:
+    tmpA = (Pmat*A)/Pmat;
+    alpha = tmpA(end,:);
+    alpha_e = [-alpha 1];   % -a^T x + v = [-a^T 1] [x,v]
+    
+    % Extended system:
+    Ae = [Ac Bc; zeros(1,size(Ac,2)+size(Bc,2))];
+    Be = [zeros(size(Ac,1),1); 1];
+    
+    % Extended safe set:
+%     Ge = [Gc zeros(size(Gc,1),size(Gu,2)); zeros(size(Gu,1),size(Gc,2)) [1;-1]];
+    Ge = [Gc zeros(size(Gc,1),size(Gu,2)); Gu.*alpha_e];
+    Fe = [F; Fu];
+    
+    A = Ae; B = Be; G = Ge; F = Fe;
+    
+    % Size of extended system:
+    n = n + 1;
+end
+
 %% Controlled Invariant Set in Two Moves
-[cisLiftedA,cisLiftedb] = mcisCF(Ac,Bc,Gc,F,verbose);
+[cisLiftedA,cisLiftedb] = mcisCF(A,B,G,F,verbose);
 [cisA,cisb] = jProject(cisLiftedA,cisLiftedb,n,verbose);
-cisMat = [cisA*Pmat cisb];
+cisMat = [cisA cisb];
 
 % If we had input constraints, we project from the extended space to the
 % original space, i.e., eliminate input u.
 if (guard)
     cisMat = fourier(cisMat,1:n-1);
 end
+
+% Return to original coordinates:
+cisMat = [cisMat(:,1:end-1)*Pmat cisMat(:,end)];
