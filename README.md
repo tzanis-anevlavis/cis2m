@@ -8,7 +8,7 @@ The proposed methods are based on an idea that works in two moves:
 
 The following different methods are available to choose from:
 1. [CDC19](https://github.com/janis10/cis2m/tree/master/CDC19) - typically efficient for systems up to 7-8 dimensions.
-2. [HSCC20](https://github.com/janis10/cis2m/tree/master/HSCC20) - a hierarchy that allows for computing larger controlled invariant sets. 
+2. [HSCC20](https://github.com/janis10/cis2m/tree/master/HSCC20) - a hierarchy for computing larger controlled invariant sets. 
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
