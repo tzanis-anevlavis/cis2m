@@ -47,23 +47,23 @@ clear
 clc
 
 % Original system:
-Ao = [1.5 1; 0 1]; Bo = [0.5; 0.25];
+A = [1.5 1; 0 1]; B = [0.5; 0.25];
 % State constraints:
-Go =[   0.9147   -0.5402;
+G =[   0.9147   -0.5402;
         0.2005    0.6213;
        -0.8193    0.9769;
        -0.4895   -0.8200;
         0.7171   -0.3581;
         0.8221    0.0228;
         0.3993   -0.8788];
-Fo = [  0.5566;
+F = [  0.5566;
         0.8300;
         0.7890;
         0.3178;
         0.4522;
         0.7522;
         0.1099];
-D = Polyhedron('H',[Go Fo]);
+D = Polyhedron('H',[G F]);
 % Input constraints:
 umin = -2;
 umax = 2;
@@ -71,12 +71,13 @@ Gu = [1; -1]; Fu = [umax; -umin];
 U = Polyhedron('H',[Gu Fu]);
 
 %% Compute controlled invariant set in two moves:
-cisMat = computeCIS(Ao,Bo,Go,Fo,Gu,Fu,0);
+method = 'CDC19';
+cisMat = computeCIS(A,B,G,F,Gu,Fu,method);
 cis = Polyhedron('H',cisMat);
 
 %% Compute MCIS using MPT3: 
-system = LTISystem('A',Ao,'B',Bo);
-mcisEx = system.invariantSet('X',D,'U',U,'maxIterations',300);
+system = LTISystem('A',A,'B',B);
+mcis = system.invariantSet('X',D,'U',U,'maxIterations',300);
 
 %% Plotting:
-figure; plot(D, 'color', 'blue', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(D, 'color', 'blue', mcis, 'color', 'lightgray', cis, 'color', 'white')

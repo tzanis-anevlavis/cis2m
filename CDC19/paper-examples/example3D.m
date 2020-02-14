@@ -93,27 +93,28 @@ F = [  0.4106;
 D = Polyhedron('H',[G F]);
 
 %% Compute controlled invariant set in two moves:
-cisMat = computeCIS(A,B,G,F,[],[],0);
+method = 'CDC19';
+cisMat = computeCIS(A,B,G,F,[],[],method);
 cis = Polyhedron('H',cisMat);
 
 %% Compute MCIS using MPT3:
 system = LTISystem('A',A,'B',B);
-mcisEx = system.invariantSet('X',D,'maxIterations',100);
+mcis = system.invariantSet('X',D,'maxIterations',100);
 
 %% Plotting:
-figure; plot(D, 'color', 'cyan', mcisEx, 'color', 'lightgray', cis, 'color', 'white')
-figure; plot(mcisEx, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(D, 'color', 'blue', mcis, 'color', 'lightgray', cis, 'color', 'white')
+figure; plot(mcis, 'color', 'lightgray', cis, 'color', 'white')
 figure; plot(cis,'color','white')
 
 D1 = D.projection(2:3);
 cis1 = cis.projection(2:3);
-mcisEx1 = mcisEx.projection(2:3);
-figure; plot(D1, 'color', 'cyan',mcisEx1, 'color', 'lightgray', cis1, 'color', 'white')
+mcisEx1 = mcis.projection(2:3);
+figure; plot(D1, 'color', 'blue',mcisEx1, 'color', 'lightgray', cis1, 'color', 'white')
 D2 = D.projection([1,3]);
 cis2 = cis.projection([1,3]);
-mcisEx2 = mcisEx.projection([1,3]);
-figure; plot(D2, 'color', 'cyan', mcisEx2, 'color', 'lightgray', cis2, 'color', 'white')
+mcisEx2 = mcis.projection([1,3]);
+figure; plot(D2, 'color', 'blue', mcisEx2, 'color', 'lightgray', cis2, 'color', 'white')
 D3 = D.projection(1:2);
 cis3 = cis.projection(1:2);
-mcisEx3 = mcisEx.projection(1:2);
-figure; plot(D3, 'color', 'cyan', mcisEx3, 'color', 'lightgray', cis3, 'color', 'white')
+mcisEx3 = mcis.projection(1:2);
+figure; plot(D3, 'color', 'blue', mcisEx3, 'color', 'lightgray', cis3, 'color', 'white')
