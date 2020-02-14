@@ -1,0 +1,92 @@
+function output = call_cplexibm_qcmiqp(interfacedata)
+
+% Author Johan Löfberg
+
+% This is a gateway to all CPLEX interfaces
+% Call LP/QP solver if sufficient
+if isempty(interfacedata.K.q) | interfacedata.K.q(1)==0
+    output = call_cplexibm_miqp(interfacedata);
+    return
+end
+
+options = interfacedata.options;
+n_original = length(interfacedata.c);
+model = yalmip2cplex(interfacedata);
+
+if options.savedebug
+    save cplexdebug model
+end
+
+% Call mex-interface
+showprogress('Calling CPLEX',options.showprogress);
+solvertime = clock;
+if isempty(model.integer_variables) & isempty(model.binary_variables) & isempty(model.semicont_variables) & isempty(model.K.sos.type)
+    [x,fval,exitflag,output] = cplexqcp(model.H, model.f, model.Aineq,model.bineq,model.Aeq,model.beq,model.Li,model.Qi,model.ri,model.lb,model.ub,model.x0,model.options);
+else
+    [x,fval,exitflag,output] = cplexmiqcp(model.H, model.f, model.Aineq,model.bineq,model.Aeq,model.beq,model.Li,model.Qi,model.ri,model.K.sos.type,model.K.sos.variables,model.K.sos.weight,model.lb,model.ub,model.ctype',model.x0,model.options);
+end
+if interfacedata.getsolvertime solvertime = etime(clock,solvertime);else solvertime = 0;end
+
+if length(x) == length(model.f)
+    if ~isempty(model.NegativeSemiVar)
+        x(model.NegativeSemiVar) = -x(model.NegativeSemiVar);
+    end
+end
+
+if isempty(x)
+    x = zeros(n_original,1);
+else
+    x = x(1:n_original);
+end
+
+problem = 0;
+D_struc = [];
+
+% Check, currently not exhaustive...
+switch output.cplexstatus
+    case {1,101,102}
+        problem = 0;
+    case {3,103,106}
+        problem = 1; % Infeasible
+    case {2,20,21,118}
+        problem = 2; % Unbounded
+    case 4
+        problem = 1;
+    case {10,11,104,105,107,108,111,112}
+        problem = 3; % Iteration/time
+    case {5,6,109,110}
+        problem = 4; % Numerics
+    case 119
+        problem = 15;
+    otherwise
+        problem = -1;
+end
+
+infostr = yalmiperror(problem,'CPLEX-IBM');
+
+% Save all data sent to solver?
+if options.savesolverinput
+    solverinput.model = model;   
+else
+    solverinput = [];
+end
+
+% Save all data from the solver?
+if options.savesolveroutput
+    solveroutput.x = x;
+    solveroutput.fval = fval;
+    solveroutput.exitflag = exitflag;
+    solveroutput.output=output;
+else
+    solveroutput = [];
+end
+
+% Standard interface
+output.Primal      = x;
+output.Dual        = D_struc;
+output.Slack       = [];
+output.problem     = problem;
+output.infostr     = infostr;
+output.solverinput = solverinput;
+output.solveroutput= solveroutput;
+output.solvertime  = solvertime;
