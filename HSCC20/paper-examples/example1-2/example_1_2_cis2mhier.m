@@ -25,7 +25,7 @@
 % Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing
 % controlled invariant sets", Submitted to 23rd ACM International 
 % Conference on Hybrid Systems: Computation and Control (HSCC'20),
-% and is publicly available at: https://github.com/janis10/cis2m-hierarchy
+% and is publicly available at: https://github.com/janis10/cis2m
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
@@ -97,11 +97,12 @@ if (isempty(gcp('nocreate')))
     parpool;
 end
 
-for L = 7:7
+for L = 1:Lmax
     disp(L);
     
+    method = 'HSCC20';
     tic
-    cisMat = CIS2M_hierarchy(A,B,G,F,Gu,Fu,L); % cisMat = [cisA cisb]
+    cisMat = computeCIS(A,B,G,F,Gu,Fu,method,L);
     Times(L) = toc;
     cis(L) = Polyhedron('H', cisMat);
     

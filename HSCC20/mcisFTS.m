@@ -20,7 +20,7 @@ function [mcisA,mcisb] = mcisFTS(Ac,Bc,Gc,F,L,verbose)
 % Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing
 % controlled invariant sets", Submitted to 23rd ACM International 
 % Conference on Hybrid Systems: Computation and Control (HSCC'20),
-% and is publicly available at: https://github.com/janis10/cis2m-hierarchy
+% and is publicly available at: https://github.com/janis10/cis2m
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %

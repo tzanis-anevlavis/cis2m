@@ -26,7 +26,7 @@
 % Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing
 % controlled invariant sets", Submitted to 23rd ACM International 
 % Conference on Hybrid Systems: Computation and Control (HSCC'20),
-% and is publicly available at: https://github.com/janis10/cis2m-hierarchy
+% and is publicly available at: https://github.com/janis10/cis2m
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
@@ -63,7 +63,7 @@ m0 = 500;   % weight of truck
 m = 1000;   % weight of trailer
 T = 0.4;    % sampling rate
 
-for N = 4:4      % number of trailers
+for N = 1:4      % number of trailers
     disp(N);
     
     % Continuous-time system - x = [d1 .. dN v0 v1 .. vN] :
@@ -100,26 +100,28 @@ for N = 4:4      % number of trailers
         parpool;
     end
     
+    method = 'HSCC20';
+    
     tic
-    cisMat = CIS2M_hierarchy(A,B,G,F,[],[],L); % cisMat = [cisA cisb]
-    Times(N) = toc
+    cisMat = computeCIS(A,B,G,F,[],[],method,L);
+    Times(N) = toc;
 	cis(N) = Polyhedron('H', cisMat);
     
-%     if (N == 3) % we noticed that MPT3's volume function was returning an
-%         % error when trying to compute the volume in this case, but
-%         % works fine if we decrease precision of decimal digits of
-%         % the vertex representation.
-%         cisVert = cis(N).V;
-%         cisVert = cisVert.*1e4;
-%         cisVert = round(cisVert);
-%         cisVert = cisVert./1e4;
-%         cis(N) = Polyhedron('V',cisVert);
-%     end
-%     
-%     if (N<4)    % For N=4, volume computation exceeded 5 hours.
-%         Volumes(N) = cis(N).volume;
-%         disp(Volumes(N))
-%     end
+    if (N == 3) % we noticed that MPT3's volume function was returning an
+        % error when trying to compute the volume in this case, but
+        % works fine if we decrease precision of decimal digits of
+        % the vertex representation.
+        cisVert = cis(N).V;
+        cisVert = cisVert.*1e4;
+        cisVert = round(cisVert);
+        cisVert = cisVert./1e4;
+        cis(N) = Polyhedron('V',cisVert);
+    end
+    
+    if (N<4)    % For N=4, volume computation exceeded 5 hours.
+        Volumes(N) = cis(N).volume;
+        disp(Volumes(N))
+    end
 end
 
 %% Compute the volumes of controlled invariant ellipsoids from
