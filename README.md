@@ -17,7 +17,7 @@ In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.g
 
 2. Tzanis Anevlavis and Paulo Tabuada, 
 "A simple hierarchy for computing controlled invariant sets", 
-In Proceedings of the 23Rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
+In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
 
 #####  More and cooler examples coming soon! Stay tuned!
 
