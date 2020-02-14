@@ -96,7 +96,7 @@ cnt = m;
 % eliminate, and intermediate removal of redundant inequalities until the 
 % resulting system of inequalities grows beyond some limit. Then use MPT3 
 % built-in tool for remaining variables.
-while (cnt>0 && N+growth<limit)
+while (cnt>0) % && N+growth<limit)
     % FME:
     tmp = fourier([A b],1:V-1);
     A = tmp(:,1:end-1);
@@ -109,7 +109,7 @@ while (cnt>0 && N+growth<limit)
         % Find the variable to be eliminated, and place it last.
         [f_elim,growth] =  jSelect(A,n);
         A = A(:,[1:f_elim-1 f_elim+1:end f_elim]);
-
+        
         if (N+growth>limit)
             % Remove vacuously satisfied inequalities.
             % by implementing a simple LP.
@@ -123,18 +123,19 @@ while (cnt>0 && N+growth<limit)
         end
     end
 end
-% If there are variables remaining, use MPT3 projection function.
-% Check for remaining variables.
-if (cnt>0)
-    % Use projection from MPT:
-    if (verbose)
-    	disp('Limit exceeded; will use MPT3 projection..')
-    end
-    tmpP = Polyhedron('H',[A b]);
-    tmpP = tmpP.projection((1:n),'ifourier');
-    A = tmpP.A;
-    b = tmpP.b;
-end
+
+% % If there are variables remaining, use MPT3 projection function.
+% % Check for remaining variables.
+% if (cnt>0)
+%     % Use projection from MPT:
+%     if (verbose)
+%     	disp('Limit exceeded; will use MPT3 projection..')
+%     end
+%     tmpP = Polyhedron('H',[A b]);
+%     tmpP = tmpP.projection((1:n),'ifourier');
+%     A = tmpP.A;
+%     b = tmpP.b;
+% end
 
 if (verbose)
 	disp('..done!')

@@ -42,6 +42,9 @@ function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,verbose)
 % Output:   cisMat: matrix defining the computed Controlled Invariant Set
 %                   cisMat = [cisA cib] s.t. CIS = {x \in \R^n | cisA x <= cisb}
 
+%% Add support folder to path
+addpath('./support_functions/');
+
 %% Input arguments check
 if (~exist('verbose','var'))
     verbose = 0;
@@ -144,3 +147,6 @@ end
 
 % Return to original coordinates:
 cisMat = [cisMat(:,1:end-1)*Pmat cisMat(:,end)];
+
+%% Remove support folder from path
+rmpath('./support_functions/');
