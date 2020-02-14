@@ -4,7 +4,7 @@ The provided code computes a Controlled Invariant Set (CIS) of a Polyhedron for 
 
 Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
-In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
+In 2019 IEEE Conference on Decision and Control (CDC). 6249–6254. [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
 
 In the `paper-examples` folder you can find the files that replicate the two examples of the above paper. 
 
@@ -13,9 +13,9 @@ In this version, the code makes use of the Multi-Parametric Toolbox 3.0:
 M. Herceg, M. Kvasnica, C. Jones, and M. Morari. Multi-Parametric Toolbox 3.0. In Proc. of the European Control Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510. http://control.ee.ethz.ch/mpt .
 
 ### Related publications
-Tzanis Anevlavis and Paulo Tabuada, 
+1. Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
-In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
+In 2019 IEEE Conference on Decision and Control (CDC). 6249–6254.
 
 ### Citations:
 If you used this algorithm for computing controlled invariant sets please cite as:
