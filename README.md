@@ -17,7 +17,7 @@ In 2019 IEEE Conference on Decision and Control (CDC). [Preprint](http://sites.g
 
 2. Tzanis Anevlavis and Paulo Tabuada, 
 "A simple hierarchy for computing controlled invariant sets", 
-In Proceedings of the 23rd ACM Conference of Hybrid Systems: Computation and Control (HSCC'20).
+In Proceedings of the 23Rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
 
 #####  More and cooler examples coming soon! Stay tuned!
 
@@ -36,3 +36,42 @@ The main wrapper function for this code is `computeCIS(A,B,G,F,Gu,Fu,method,verb
   * `verbose` is `0` for silent output, or `1`for verbose. Default is `0`.
 
 The function will return a controlled invariant subset of D in the form of a matrix `[Gcis Fcis]` such that `CIS = {x \in \R^n | Gcis x <= Fcis}`.
+
+### Citations:
+If you used our algorithm for computing controlled invariant sets please cite as:
+```latex
+@inproceedings{AT2020cis2mHier
+ author = {Anevlavis, Tzanis and Tabuada, Paulo},
+ title = {A simple hierarchy for computing controlled invariant sets},
+ booktitle = {Proceedings of the 23Rd ACM International Conference on Hybrid Systems: Computation and Control},
+ series = {HSCC '20},
+ year = {2020},
+ isbn = {978-1-4503-7018-9/20/04},
+ location = {Sydney, NSW, Australia},
+ pages = {},
+ numpages = {11},
+ url = {http://doi.acm.org/10.1145/3365365.3382205},
+ doi = {10.1145/3365365.3382205},
+ acmid = {},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Controller Synthesis, Safety, Controlled Invariance},
+} 
+```
+or
+```latex
+@inproceedings{AT2019cis2m,
+author={T. Anevlavis and P. Tabuada}, 
+booktitle={2019 IEEE Conference on Decision and Control (CDC)}, 
+title={Computing controlled invariance sets in two moves}, 
+year={2019}, 
+volume={}, 
+number={}, 
+pages={6249-6254}, 
+keywords={}, 
+doi={}, 
+url={},
+ISSN={}, 
+month={Dec},} 
+```
+depending on the version you used!
