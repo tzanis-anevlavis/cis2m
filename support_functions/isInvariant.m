@@ -1,4 +1,4 @@
-function [slct,growth] = jSelect(A,n)
+function [isIT] = isInvariant(P,A,B)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2019, Tzanis Anevlavis.
 %
@@ -25,24 +25,16 @@ function [slct,growth] = jSelect(A,n)
 %
 %
 %% Description:
-% This function finds the variable that will yield the best growth if
-% eliminated by Fourier-Motzkin Elimination.
-%
-% n = number of variables we do not want to eliminate
+% Check if a polyhedron P is invariant with respect to a linear system:
+% x^+ = A x + B u
 
-N = size(A,1);
-m = size(A,2);
 
-growth = N^2;
+n = size(A,1);
 
-for i = 1:(m-n)
-    pos = sum(A(:,n+i)>0);
-    neg = sum(A(:,n+i)<0);
-    
-    g = pos*neg - (pos+neg);
-    
-    if (g <= growth)
-        growth = g;
-        slct = n+i;
-    end
-end
+G = P.A;
+f = P.b;
+
+W = Polyhedron('H', [G*A G*B f]);
+Pre = W.projection(1:n);
+
+isIT = (P <= Pre);

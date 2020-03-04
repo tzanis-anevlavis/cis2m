@@ -1,6 +1,6 @@
-function [mcisA,mcisb] = mcisFTS(Ac,Bc,Gc,F,L,verbose)
-%% Authors: Tzanis Anevlavis, Paulo Tabuada
-% Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
+function [mcisA,mcisb] = hscc20(Ac,Bc,Gc,F,L,verbose)
+%% Authors: T.Anevlavis, and P.Tabuada
+% Copyright (C) 2020, T.Anevlavis, and P.Tabuada
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -16,11 +16,8 @@ function [mcisA,mcisb] = mcisFTS(Ac,Bc,Gc,F,L,verbose)
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the implementation of the algorithm proposed in:
-% Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing
-% controlled invariant sets", Submitted to 23rd ACM International 
-% Conference on Hybrid Systems: Computation and Control (HSCC'20),
-% and is publicly available at: https://github.com/janis10/cis2m
+% This code is part of the Controlled Invariance in 2 Moves repository 
+% (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
@@ -28,22 +25,10 @@ function [mcisA,mcisb] = mcisFTS(Ac,Bc,Gc,F,L,verbose)
 %
 %
 %% Description:
-% This function takes as input a discete-time linear system and a
-% polyhedral safe set (in Brunovsky normal form coordinates),
-% and uses the lifting procedure described in our paper, in order to
-% compute the Maximal Controlled Invariant Set in the lifted space.
-%
-% Inputs:   Ac, Bc : defining the discrete-time LTI x^+ = Ac x + Bc u,
-%                    in Brunovsky form
-%           Gc, F  : defining the safe set: {x \in \R^n | Gc x <= F} ,
-%                    in Brunovsky coordinates
-%           L      : positive integer defining the length of the FTS loop
-%
-%           verbose = 0 - no messages; 1 - displays messages.
-%
-% Outputs:  mcisA, mcisb:
-%           matrices defining the computed Controlled Invariant Set
-%           CIS = {(x,\lambda) \in \R^{n+Lk} | mcisA (x,\lambda) <= mcisb}
+% Computes a lifted controlled invariant set using Algorithm 1, proposed in
+% Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing
+% controlled invariant sets", In Proceedings of the 23rd ACM International 
+% Conference on Hybrid Systems: Computation and Control (HSCC'20).
 
 if (verbose)
     disp('Lifting problem to compute controlled invariant set in closed-form . . .')

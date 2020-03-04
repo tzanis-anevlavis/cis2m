@@ -1,15 +1,14 @@
-function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F,verbose)
-
-%% Authors: Tzanis Anevlavis, Paulo Tabuada
-% Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
+function [mcisA,mcisb] = cdc19(Ac,Bc,Gc,F,verbose)
+%% Authors: T.Anevlavis, and P.Tabuada
+% Copyright (C) 2019, T.Anevlavis, and P.Tabuada
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation, either version 3 of the License, or
 % (at your option) any later version.
 %
-% This program is distributed in the hope that it will be useful, but 
-% WITHOUT ANY WARRANTY; without even the implied warranty of 
+% This program is distributed in the hope that it will be useful, but
+% WITHOUT ANY WARRANTY; without even the implied warranty of
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 % See the GNU General Public License for more details.
 %
@@ -17,10 +16,8 @@ function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F,verbose)
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the implementation of the algorithm proposed in:
-% Tzanis Anevlavis and Paulo Tabuada, "Computing controlled invariant sets
-% in two moves", in 2019 IEEE Conference on Decision and Control,
-% and is publicly available at: https://github.com/janis10/cis2m
+% This code is part of the Controlled Invariance in 2 Moves repository 
+% (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
@@ -28,17 +25,9 @@ function [mcisA,mcisb] = mcisCF(Ac,Bc,Gc,F,verbose)
 %
 %
 %% Description:
-% This function takes as input a system in Brunovsky normal form 
-% and a polyhedron in the corresponding coordinates, and returns the
-% Maximal Controlled Invariant Set (MCIS) (in the higher dimensional space)
-%
-% System:                   x+ = Ac x + Bc u
-% Polyhedral constraint:    D = {x \in \R^n | Gc x <= F}
-% 
-% Returns: matrices mcisA, mcisb such that
-%                   MCIS = {(x,f)| mcisA (x,f)^T <= mcisb}
-%
-%           verbose = 0 - no messages; 1 - displays messages.
+% Computes a lifted controlled invariant set using Algorithm 1, proposed in
+% Tzanis Anevlavis and Paulo Tabuada, "Computing controlled invariant sets
+% in two moves", in 2019 IEEE Conference on Decision and Control (CDC'19).
 
 n = size(Ac,1); % number of original variables
 m = size(Gc,1); % number of original inequalities

@@ -1,4 +1,4 @@
-function [slct,growth] = jSelect(A,n)
+function [A,B,E,G,F] = inputExt(A,Pmat,Ac,Bc,Ec,Gc,F,Gu,Fu)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2019, Tzanis Anevlavis.
 %
@@ -25,24 +25,29 @@ function [slct,growth] = jSelect(A,n)
 %
 %
 %% Description:
-% This function finds the variable that will yield the best growth if
-% eliminated by Fourier-Motzkin Elimination.
-%
-% n = number of variables we do not want to eliminate
+% Input constraints:
+% If there are input constraints, we extend the system by one dimension to
+% incorporate them.
 
-N = size(A,1);
-m = size(A,2);
+n = size(Ac,1);	% dimension of the system
+m = size(Bc,2);	% number of inputs
 
-growth = N^2;
-
-for i = 1:(m-n)
-    pos = sum(A(:,n+i)>0);
-    neg = sum(A(:,n+i)<0);
+% Matrix A in Brunovsky form before feedback:
+tmpA = (Pmat*A)/Pmat;
+if (m==1)           % Single input case.
+    alpha = tmpA(end,:);
+    alpha_e = [-alpha 1];   % -a^T x + v = [-a^T 1] [x,v]
+    % Extended system:
+    Ae = [Ac Bc; zeros(1,size(Ac,2)+size(Bc,2))];
+    Be = [zeros(size(Ac,1),1); 1];
+    Ee = [Ec;0];
+    % Extended safe set:
+    Ge = [Gc zeros(size(Gc,1),size(Gu,2)); Gu.*alpha_e];
+    Fe = [F; Fu];
+    A = Ae; B = Be; E = Ee; G = Ge; F = Fe;
+    % Size of extended system:
+    n = n + 1;
     
-    g = pos*neg - (pos+neg);
-    
-    if (g <= growth)
-        growth = g;
-        slct = n+i;
-    end
+elseif (m>1)        % Multi-input case.
+    error('Coming soon');
 end

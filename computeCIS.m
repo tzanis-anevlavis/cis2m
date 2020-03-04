@@ -1,7 +1,6 @@
-function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,loop,verbose)
-
-%% Authors: Tzanis Anevlavis, Paulo Tabuada
-% Copyright (C) 2019, Tzanis Anevlavis, Paulo Tabuada
+function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,L,E,Gw,Fw,verbose)
+%% Authors: Tzanis Anevlavis
+% Copyright (C) 2020, Tzanis Anevlavis
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -17,10 +16,8 @@ function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,loop,verbose)
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the implementation of the algorithm proposed in:
-% Tzanis Anevlavis and Paulo Tabuada, "Computing controlled invariant sets
-% in two moves", in 2019 IEEE Conference on Decision and Control, 
-% and is publicly available at: https://github.com/janis10/cis2m
+% This code is part of the Controlled Invariance in 2 Moves repository
+% (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
 % For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
@@ -28,144 +25,39 @@ function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,loop,verbose)
 %
 %
 %% Description:
-% This function takes as input a discete-time linear system and a
-% polyhedral safe set and computes a Controlled Invariant Subset of the
-% safe set.
+% This is the wrapper of the CIS2M repository.
+%
+% Takes as input a discete-time linear system and a polyhedral safe set.
+% Computes a  (robust) Controlled Invariant Subset of the safe set.
 %
 % Inputs:   A, B : matrices defining the discrete-time LTI: x+ = Ax + Bu
 %           G, F : matrices defining the safe set: {x \in \R^n | G x <= F}
-%           Gu,Fu: matrices defining the input constr: {u \in \R | Gu x <= Fu}
+%           Gu,Fu: matrices defining the input constr: {u \in \R | Gu u <= Fu}
 %                  if there are no input constraints use Gu = [], Fu = [].
+%              E : disturbance matrix if the system is: x+ = Ax + Bu + Ew
+%           Gw,Fw: matrices defining the disturb. set: {w \in \R^k | Gw w <= Fw}
+%                  if there is no disturbance use E = [], Gu = [], Fu = [].
+%
+%           method: available methods CDC19, HSCC20, CDC20a, CDC20b.
+%                  in the case of disturbance choose CDC20b.
+%
+%              L : lentgh of the loop for HSCC20, CDC20a, CDC20b (L>0 int.)
 %
 %           verbose = 0 - no messages; 1 - displays messages.
 %
 % Output:   cisMat: matrix defining the computed Controlled Invariant Set
-%                   cisMat = [cisA cib] s.t. CIS = {x \in \R^n | cisA x <= cisb}
+%                   cisMat = [cisA cib]
+%                   s.t. CIS = {x \in \R^n | cisA x <= cisb}
 
 %% Add support folder to path
 % addpath('./support_functions/');
 
 %% Input arguments check
-if (~exist('verbose','var'))
-    verbose = 0;
-end
-if (~exist('method','var'))
-    prompt = 'Choose method: 1 for CDC19 or 2 for HSCC20.';
-    method = input(prompt);
-    if (method==1)
-        method = 'CDC19';
-    elseif (method==2)
-        method = 'HSCC20';
-    else
-        error('Not an avaiable method. Choose either CDC19 or HSCC20');
-    end
-end
-if (~exist('Gu','var') && ~exist('Fu','var'))
-    Gu = [];    Fu = [];
-elseif (exist('Gu','var') && ~exist('Fu','var'))
-    error('Vector Fu given, but not matrix Gu.')
-elseif (~exist('Gu','var') && exist('Fu','var'))
-    error('Matrix Gu given, but not vector Fu.')
-elseif (size(G,1)~=size(F,1))
-    error('Dimensions (number of rows) of G and F do not match.')
-elseif (size(G,2)~=size(A,2))
-    error('Dimensions (number of columns) of A and G do not match.')
-elseif (size(A,1)~=size(B,1))
-    error('Dimensions of A and B do not match.')
-elseif (~isempty(Gu) && ~isempty(Fu))
-    if (size(Gu,1)~=size(Fu,1))
-        error('Dimensions (number of rows) of Gu and Fu do not match.')
-    elseif (size(B,2)~=size(Gu,2))
-        error('Dimensions (number of columns) of B and Gu do not match.')
-    end
-end
-if (nargin<4)
-    error('Not enough input arguments.')
-end
-
 n = size(A,1);	% dimension of the system
-m = size(B,2);	% number of inputs
+inputArgCheck
 
 %% Convert system in Brunovsky normal form space:
-% Controllability matrix:
-C = B;
-for i = 1:n-1
-    C = [B A*C];
-end
-if (rank(C)<n)
-    warning('System not controllable');
-    disp('System dimension:');
-    disp(n);
-    disp('Controllability rank:');
-    disp(rank(C));
-end
-
-% Compute the similarity transformation matrix:
-if (m == 1)         % Single-input case.
-    Cbar = C;
-    initPos = 1;
-else                % Multi-input case.
-    initPos = (1:m);
-    Cbar = B;
-    for i = 1:(size(C,2)-m)
-        j = mod(i,m);
-        tmpC = Cbar;
-        tmpC = [tmpC(:,1:(initPos(j+1)-1)) C(:,m+i) tmpC(:,initPos(j+1):end)];
-        if (rank(tmpC)>rank(Cbar))
-            Cbar = tmpC;
-            initPos(j+1:end) = initPos(j+1:end)+1;
-            if (rank(Cbar)==n)
-                break;
-            end
-        end
-    end
-end
-% Check condition number prior to using Cbar^{-1}:
-if (cond(Cbar)>1e14)
-    warning('Condition number > 1e14')
-end
-
-% Compute controllability indices and \sigmas:
-contrInd = zeros(m,1);
-sigma = zeros(m,1);
-for v = 1:m
-    if (v == m)
-        contrInd(v) = n+1 - initPos(v);
-    else
-        contrInd(v) = initPos(v+1)-initPos(v);
-    end
-    
-    if (v==1)
-        sigma(v) = contrInd(v);
-    else
-        sigma(v) = sigma(v-1) + contrInd(v);
-    end
-end
-
-% Similarity transformation matrix:
-CbarInv = inv(Cbar);
-Pmat = [];
-for v = 1:m
-    q = CbarInv(sigma(v),:);
-    for i = 1:contrInd(v)
-        Pmat = [Pmat; q*A^(i-1)];
-    end
-end
-
-% Domain in Brunovsky coordinates:
-Gc = G/Pmat;
-Gc(abs(Gc)<max(abs(Gc))/1e12) = 0;
-% Make all elements rational numbers with 7-decimal-digit precision.
-Gc = Gc.*1e7;
-Gc = round(Gc);
-Gc = Gc./1e7;
-% System in Brunovsky Normal Form after feedback:
-if (m==1)   % Single-input case.
-    Ac = [zeros(n-1,1) eye(n-1); zeros(1,n)];
-    Bc = [zeros(n-1,1); 1];
-else        % Multi-input case.
-    error('Coming soon');
-end
+[Ac,Bc,Ec,Gc,Pmat] = convert2Bru(A,B,E,G);
 
 %% Input constraints:
 % If there are input constraints, we extend the system by one dimension to
@@ -173,76 +65,86 @@ end
 guard = false;
 if (~isempty(Gu))
     guard = true;
-    
-    % Matrix A in Brunovsky form before feedback:
-    tmpA = (Pmat*A)/Pmat;
-    if (m==1)           % Single input case.
-        alpha = tmpA(end,:);
-        alpha_e = [-alpha 1];   % -a^T x + v = [-a^T 1] [x,v]
-        % Extended system:
-        Ae = [Ac Bc; zeros(1,size(Ac,2)+size(Bc,2))];
-        Be = [zeros(size(Ac,1),1); 1];
-        % Extended safe set:
-        Ge = [Gc zeros(size(Gc,1),size(Gu,2)); Gu.*alpha_e];
-        Fe = [F; Fu];
-        
-        A = Ae; B = Be; G = Ge; F = Fe;
-        % Size of extended system:
-        n = n + 1;
-        
-    elseif (m>1)        % Multi-input case.
-        error('Coming soon');
+    [A,B,E,G,F] = inputExt(A,Pmat,Ac,Bc,Ec,Gc,F,Gu,Fu);
+    n = size(A,1);
+else
+    A = Ac; B = Bc; E = Ec; G = Gc;
+end
+
+%% Construct D_k
+% This is for CDC20b only.
+if (disturbance)
+    % Minkowski difference for the closed-form expression.
+    G_k = cell(n,1);
+    F_k = cell(n,1);
+    W = Polyhedron('A',Gw,'b',Fw);
+    D = Polyhedron('A',G,'b',F);
+    for i = 1:n
+        D = D - A^(i-1)*E*W;
+        D.minHRep();
+        G_k{i} = D.A;
+        F_k{i} = D.b;
     end
 else
-    A = Ac; B = Bc; G = Gc;
+    G_k = cell(n,1);
+    F_k = cell(n,1);
+    D = Polyhedron('A',G,'b',F);
+    D.minHRep();
+    for i = 1:n
+        G_k{i} = D.A;
+        F_k{i} = D.b;
+    end
 end
 
 %% Controlled Invariant Set in Two Moves
 if (strcmp(method,'CDC19'))
-    addpath('./CDC19/');
-    [cisLiftedA,cisLiftedb] = mcisCF(A,B,G,F,verbose);
-    rmpath('./CDC19/');
+    [cisLiftedA,cisLiftedb] = cdc19(A,B,G,F,verbose);
 elseif (strcmp(method,'HSCC20'))
-%     addpath('./HSCC20/');
-    if (exist('loop','var'))
-        L = loop;
-    else
-        prompt = 'Choose a value for length of loop (L>0):';
-        L = input(prompt);
-        while ((L<0) || (L==0) || (floor(L)~=L))
-            prompt = 'Input L must be positive integer:';
-            L = input(prompt);
-        end
-    end
     if (L==1)
-        [cisLiftedA,cisLiftedb] = mcisCF(A,B,G,F,verbose);
-    elseif (L>1)
-        [cisLiftedA,cisLiftedb] = mcisFTS(A,B,G,F,L,verbose);
-    elseif (L<0)
-        error('L must be a positive integer.');
-    elseif(floor(L)~=L)
-        error('L must be a positive integer.');
+        [cisLiftedA,cisLiftedb] = cdc19(A,B,G,F,verbose);
+    else
+        [cisLiftedA,cisLiftedb] = hscc20(A,B,G,F,L,verbose);
     end
- 
-%     rmpath('./HSCC20/');
+elseif (strcmp(method,'CDC20a'))
+    [cisLiftedA,cisLiftedb] = cdc20a(A,G,F,L,verbose);
+elseif (strcmp(method,'CDC20b'))
+    [cisLiftedA,cisLiftedb] = cdc20b(A,G,F,G_k,F_k,L,verbose);
 else
-    error('Not an avaiable method. Choose either CDC19 or HSCC20');
+    error('Invalid method.');
 end
 
-[cisA,cisb] = jProject(cisLiftedA,cisLiftedb,n,verbose);
+proj = 0;
+% Use custom projection (faster with parallel pool)
+if (proj == 1)
+    [cisA,cisb] = jProject(cisLiftedA,cisLiftedb,n,verbose);
+    % If we had input constraints, we project from the extended space to the
+    % original space, i.e., eliminate input u.
+    if (guard)
+        [cisA, cisb] = jProject(cisA,cisb,n-1,verbose);
+    end
+    % Use MPT3 and let it decide.
+else
+    P = Polyhedron('A',cisLiftedA,'b',cisLiftedb);
+    P.minHRep;
+%     Px = P.projection(1:n);
+    Px = P.projection(1:n,'ifourier');  % seems to be better than mplp for
+                                        % many cases.
+
+    % If we had input constraints, we project from the extended space to the
+    % original space, i.e., eliminate input u.
+    if (guard)
+        Px = Px.projection(1:(n-1));
+    end
+    
+    cisA = Px.A;
+    cisb = Px.b;
+end
+
 cisMat = [cisA cisb];
-
-% If we had input constraints, we project from the extended space to the
-% original space, i.e., eliminate input u.
-if (guard)
-    [cisA,cisb] = jCompress(cisA,cisb);
-    cisMat = [cisA cisb];
-    cisMat = fourier(cisMat,1:n-1);
-end
-
 
 % Return to original coordinates:
 cisMat = [cisMat(:,1:end-1)*Pmat cisMat(:,end)];
+
 
 %% Remove support folder from path
 % rmpath('./support_functions/');
