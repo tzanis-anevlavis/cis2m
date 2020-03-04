@@ -8,7 +8,7 @@ In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Compu
 
 In the `paper-examples` folder you can find the files and the instructions on how to replicate all the examples of the above paper.
 
-For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
+For any comments contact Tzanis Anevlavis @ janis10@ucla.edu. 
 
 ### Dependencies:
 The current version of the repository makes use of the Multi-Parametric Toolbox 3.0:
