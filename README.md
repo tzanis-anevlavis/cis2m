@@ -34,7 +34,7 @@ The main wrapper function for this code is `computeCIS(A,B,G,F,Gu,Fu,method,verb
   * `A` and `B` are matrices that define your discrete-time linear system `x^+ = Ax + Bu`.
   * `G` and `f` are matrices that define the polyhedral safe set `D = {x \in \R^n | Gx <= F}`.
   * `Gu` and `fu` are similarly matrices that define the polyhedral constraints on the input `u`, i.e., `Du = {u \in \R | Gu u <= Fu}`. For unconstrained input use `[]` at each entry `Gu`, `Fu`.
-  * `method` is either `'CDC19'`, or `'HSCC20'`. More details for each method in the corresponding folders.
+  * `method` is either `'CDC19'`, `'HSCC20'`, `'CDC20a'`, or `'CDC20b'`. More details for each method in the corresponding folders.
   * `verbose` is `0` for silent output, or `1`for verbose. Default is `0`.
 
 The function will return a controlled invariant subset of D in the form of a matrix `[Gcis Fcis]` such that `CIS = {x \in \R^n | Gcis x <= Fcis}`.
