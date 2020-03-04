@@ -43,7 +43,7 @@ function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,loop,verbose)
 %                   cisMat = [cisA cib] s.t. CIS = {x \in \R^n | cisA x <= cisb}
 
 %% Add support folder to path
-addpath('./support_functions/');
+% addpath('./support_functions/');
 
 %% Input arguments check
 if (~exist('verbose','var'))
@@ -203,7 +203,7 @@ if (strcmp(method,'CDC19'))
     [cisLiftedA,cisLiftedb] = mcisCF(A,B,G,F,verbose);
     rmpath('./CDC19/');
 elseif (strcmp(method,'HSCC20'))
-    addpath('./HSCC20/');
+%     addpath('./HSCC20/');
     if (exist('loop','var'))
         L = loop;
     else
@@ -224,7 +224,7 @@ elseif (strcmp(method,'HSCC20'))
         error('L must be a positive integer.');
     end
  
-    rmpath('./HSCC20/');
+%     rmpath('./HSCC20/');
 else
     error('Not an avaiable method. Choose either CDC19 or HSCC20');
 end
@@ -235,11 +235,14 @@ cisMat = [cisA cisb];
 % If we had input constraints, we project from the extended space to the
 % original space, i.e., eliminate input u.
 if (guard)
+    [cisA,cisb] = jCompress(cisA,cisb);
+    cisMat = [cisA cisb];
     cisMat = fourier(cisMat,1:n-1);
 end
+
 
 % Return to original coordinates:
 cisMat = [cisMat(:,1:end-1)*Pmat cisMat(:,end)];
 
 %% Remove support folder from path
-rmpath('./support_functions/');
+% rmpath('./support_functions/');
