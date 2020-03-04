@@ -6,7 +6,7 @@ Tzanis Anevlavis and Paulo Tabuada,
 "Computing controlled invariant sets in two moves", 
 In 2019 IEEE Conference on Decision and Control (CDC). 6249–6254. [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
 
-In the `paper-examples` folder you can find the files that replicate the two examples of the above paper. 
+In the `paper-examples` folder you can find the files that replicate the two examples of the above paper.
 
 For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 
