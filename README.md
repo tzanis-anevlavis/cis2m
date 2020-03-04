@@ -10,7 +10,7 @@ The following different methods are available to choose from:
 1. [CDC19](https://github.com/janis10/cis2m/tree/master/paper-archive/CDC19) - typically efficient for systems up to 7-8 dimensions.
 2. [HSCC20](https://github.com/janis10/cis2m/tree/master/paper-archive/HSCC20) - a hierarchy for computing larger controlled invariant sets. 
 3. [CDC20a] - same hierarchy as HSCC20, with superior computational efficiency. 
-4. [CDC20b] - a less conservative hierarchy guaranteed to always include the results of [HSCC20/CDC20a].
+4. [CDC20b] - a less conservative hierarchy guaranteed to always include the results of [HSCC20/CDC20a] (preferred method).
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
