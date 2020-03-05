@@ -1,4 +1,4 @@
-# Computing Controlled Invariant Sets in Two Moves (cis2m)
+# Controlled Invariant Sets in 2 Moves (cis2m)
 
 This repository contains different algorithms that compute Controlled Invariant Sets (CISs) of Polyhedra for the class of Controllable Discrete-time Time-invariant Linear Systems. 
 
