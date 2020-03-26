@@ -62,18 +62,13 @@ If you used our algorithm for computing controlled invariant sets please cite as
 ```
 or
 ```latex
-@inproceedings{AT2019cis2m,
-author={T. Anevlavis and P. Tabuada}, 
-booktitle={2019 IEEE Conference on Decision and Control (CDC)}, 
-title={Computing controlled invariance sets in two moves}, 
+@@INPROCEEDINGS{AnevTabCIS2M, 
+author={T. {Anevlavis} and P. {Tabuada}}, 
+booktitle={2019 IEEE 58th Conference on Decision and Control (CDC)}, 
+title={Computing controlled invariant sets in two moves}, 
 year={2019}, 
 volume={}, 
 number={}, 
-pages={6249-6254}, 
-keywords={}, 
-doi={}, 
-url={},
-ISSN={}, 
-month={Dec},} 
+pages={6248-6254},}
 ```
 depending on the version you used!
