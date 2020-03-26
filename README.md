@@ -69,6 +69,7 @@ title={Computing controlled invariant sets in two moves},
 year={2019}, 
 volume={}, 
 number={}, 
+doi = {10.1109/CDC40024.2019.9029610},
 pages={6248-6254},}
 ```
 depending on the version you used!
