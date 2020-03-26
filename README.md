@@ -62,7 +62,7 @@ If you used our algorithm for computing controlled invariant sets please cite as
 ```
 or
 ```latex
-@@INPROCEEDINGS{AnevTabCIS2M, 
+@inproceedings{AnevTabCIS2M, 
 author={T. {Anevlavis} and P. {Tabuada}}, 
 booktitle={2019 IEEE 58th Conference on Decision and Control (CDC)}, 
 title={Computing controlled invariant sets in two moves}, 
