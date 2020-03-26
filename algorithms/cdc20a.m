@@ -24,11 +24,6 @@ function [mcisA,mcisb] = cdc20a(Ac,Gc,F,L,verbose)
 %
 %
 %
-%% Description:
-% Computes a lifted controlled invariant set using Algorithm 1, proposed in
-% T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada, "An enhanced hierarchy for
-% (robust) controlled invariant sets", Submitted to 2020 IEEE Conference on
-% Decision and Control (CDC'20).
 
 if (verbose)
     disp('Lifting problem to compute controlled invariant set in closed-form . . .')
