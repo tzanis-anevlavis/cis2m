@@ -24,11 +24,6 @@ function [mcisA,mcisb] = cdc20b(Ac,Gc,F,G_k,F_k,L,verbose)
 %
 %
 %
-%% Description:
-% Computes a lifted controlled invariant set using Algorithm 2, proposed in
-% T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada, "An enhanced hierarchy for
-% (robust) controlled invariant sets", Submitted to 2020 IEEE Conference on
-% Decision and Control (CDC'20).
 
 
 if (verbose)
