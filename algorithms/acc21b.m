@@ -1,4 +1,4 @@
-function [mcisA,mcisb] = cdc20a(Ac,Gc,F,L,verbose)
+function [mcisA,mcisb] = acc21b(Ac,Gc,F,G_k,F_k,L,verbose)
 %% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada (alphabetically)
 % Copyright (C) 2020, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
@@ -25,60 +25,50 @@ function [mcisA,mcisb] = cdc20a(Ac,Gc,F,L,verbose)
 %
 %
 
+
 if (verbose)
     disp('Lifting problem to compute controlled invariant set in closed-form . . .')
 end
 
-%% New lift -- corresponds to 0-step:
 n = size(Ac,1);
 k = size(Gc,1);
 
-% l < x < u
-H = [-eye(n); eye(n)];
-R = [-eye(n) zeros(n); zeros(n) eye(n)];
+dbar = floor(n/L);
+S = [zeros(L-1,1) eye(L-1); 1 zeros(1,L-1)];
+I = repmat(eye(L),dbar,1);
+P = [I; eye(n-dbar*L) zeros(n-dbar*L,(1+dbar)*L-n)];
 
-% B \subseteq D
-GP = (Gc>0);
-GN = (Gc<0);
-Gl = [Gc.*GN Gc.*GP];
+%% Step 0 constraints:
+% Gc x \leq F
+G0 = [Gc zeros(k,L)];
+F0 = F;
 
+%% Step 1 to n-1 constraints:
+G1n1 = [];
+F1n1 = [];
 
-G0 = [H -R; zeros(k,n) Gl];
-G0 = [G0 zeros(2*n+k,L)];
-F0 = [zeros(2*n,1); F];
-
-%% Construct 1:(L-1)-step matrices:
-
-tmpG = [];
-F1L1 = [];
-
-for s = 1:L-1
+for s = 1:n-1
     sbar = min(s,n);
+    T = [[zeros(n-sbar,sbar); eye(sbar)] zeros(n,n-sbar) ];
     
-    Phi = [Ac^s zeros(n); zeros(n) Ac^s];
-    Y = [zeros(n,s-n) [zeros(n-s,sbar); eye(sbar)] zeros(n,L-s)];
-    
-    tmpG = [tmpG; Gl*Phi Gc*Y];
-    F1L1 = [F1L1; F];
+    G1n1 = [G1n1; G_k{s}*Ac^s G_k{s}*T*P];
+    F1n1 = [F1n1; F_k{s}];
 end
 
-G1L1 = [zeros(size(tmpG,1),n) tmpG];
+%% Step n to n+L-1 constraints:
+GnL1 = [];
+FnL1 = [];
 
-%% Construct L-step matrices -- corresponds to returning to the initial hyper-rectangle:
-s = L;
-sbar = min(s,n);
-Phi = [Ac^s zeros(n); zeros(n) Ac^s];
-Y = [zeros(n,s-n) [zeros(n-s,sbar); eye(sbar)] zeros(n,L-s)];
-
-HP = (H>0);
-HN = (H<0);
-Hl = [H.*HN H.*HP];
-
-GL = [zeros(2*n,n) (Hl*Phi-R) H*Y];
-FL = [zeros(2*n,1)];
+for s = n:n+L-1
+    sbar = min(s,n);
+    T = [[zeros(n-sbar,sbar); eye(sbar)] zeros(n,n-sbar) ];
+    
+    GnL1 = [GnL1; zeros(size(G_k{n},1),n) G_k{n}*T*P*S^(s-1)];
+    FnL1 = [FnL1; F_k{n}];
+end
 
 %% Construct the final set:
-finalSet = [G0 F0; G1L1 F1L1; GL FL];
+finalSet = [G0 F0; G1n1 F1n1; GnL1 FnL1];
 
 mcisA = finalSet(:,1:end-1);
 mcisb = finalSet(:,end);

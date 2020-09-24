@@ -53,7 +53,7 @@ m = 1000;   % weight of trailer
 T = 0.4;    % sampling rate
 
 %% N = 2 <-> n = 5
-N = 2;      % number of trailers
+N = 4;      % number of trailers
 % Continuous-time system - x = [d1 .. dN v0 v1 .. vN] :
 tmpA12 = [eye(N) zeros(N,1)]+[zeros(N,1) -eye(N)];
 tmpA1 = [zeros(N,N) tmpA12];
@@ -78,7 +78,7 @@ vMin = 0;   % -min velocity
 %% Outer-approximation of the MCIS:
 
 % Degree of v(x) and w(x)
-degs = [4 6 8];
+degs = [4];
 for i = 1:length(degs)
     deg = degs(i);
     % Discounting factor

@@ -87,7 +87,7 @@ Loops = [2 3];
 Lmax = length(Loops);
 
 % Results matrices:
-methods = {'CDC20a','CDC20b'};
+methods = {'ACC21a','ACC21b'};
 numMethods = length(methods);
 
 for mm = 1:numMethods

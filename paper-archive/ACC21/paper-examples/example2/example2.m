@@ -40,75 +40,75 @@ close all
 clear
 clc
 
-%% Generate system dynamics
-[param,Safe] = constant_lk4();  % Choose disturbance range within. 
-[A,B,D,U,P,dyn] = get_lk_dyn(param);
+%% Model parameters:
+% Original system:
+[param,Safe] = constant_lk4();
+[A,B,D,U,P] = get_lk_dyn(param);
 
+% State constraints:
 G = Safe.A;
 F = Safe.b;
+
+% Input constraints:
 Gu = U.A;
 Fu = U.b;
-Gw = P.A;
-Fw = P.b;
 
 %% Compute MCIS using MPT3
-t = tic;
-mcis = dyn.win_always(Safe,0,0,1);
-timeMCIS = toc(t);
-disp(timeMCIS)
+tic
+system = LTISystem('A',A,'B',B);
+mcis = system.invariantSet('X',Safe,'U',U,'maxIterations',300);
+timeMCIS = toc;
 volumeMCIS = mcis.volume;
-disp(volumeMCIS)
 
 %% Controlled Invariant Set in Two Moves - Hierarchy
+
+% Maximum length of loops:
+Loops = (2:6);
+Lmax = length(Loops);
+
+% Results matrices:
+methods = {'ACC21a','ACC21b'};
+numMethods = length(methods);
+
+for mm = 1:numMethods
+    Times{mm} = zeros(Lmax,1);
+    Volumes{mm} = zeros(Lmax,1);
+    VolumePercentage{mm} = zeros(Lmax,1);
+end
 
 % Start parallel pool if it is not running already:
 if (isempty(gcp('nocreate')))
     parpool;
 end
 
-% Length of loops:
-Loops = (1:6);
-Lmax = length(Loops);
-
-% Results matrices:
-Times = zeros(Lmax,1);
-Volumes = zeros(Lmax,1);
-VolumePercentage = zeros(Lmax,1);
-
-method = 'CDC20b';
-disp(method)
-for l=1:Lmax
-    L = Loops(l);
-    disp(L)
+for mm = 1:numMethods
+    method = methods(mm);
+    disp(method)
     
-    t = tic;
-    cisMat =computeCIS2(A,B,G,F,Gu,Fu,method,L,D,Gw,Fw,0);
-    Times(l) = toc(t);
+    for l = 1:Lmax
+        L = Loops(l);
+        disp(L);
+        
+        t2  = tic;
+        cisMat = computeCIS(A,B,G,F,Gu,Fu,method,L);
+        Times{mm}(l) = toc(t2);
+        disp(Times{mm}(l));
+        cis{mm}(l) = Polyhedron('H', cisMat);
+        
+        guard = isInvariant(cis{mm}(l),A,B);
+        if (~guard)
+            warning('result not numerically invariant');
+        end
+        
+        D = Polyhedron('H',[G F]);
+        guard2 = (cis{mm}(l) <= D);
+        if (~guard2)
+            warning('out of safe set');
+        end
+        
+        Volumes{mm}(l) = cis{mm}(l).volume;
+        disp(Volumes{mm}(l));
+    end
     
-    cis(l) = Polyhedron('H',cisMat);
-    Volumes(l) = cis(l).volume;
+    VolumePercentage{mm} = Volumes{mm}./volumeMCIS*100;
 end
-
-disp(Times)
-disp(Volumes)
-
-VolumePercentage = Volumes{mm}./volumeMCIS*100;
-
-%% MPT3
-% c2 = tic;
-% system = LTISystem('A',A,'B',B);
-% mcis = system.invariantSet('X',Safe,'U',U);
-% volumeMCIS = mcis.volume
-% t2 = toc(c2)
-%% Visualization
-%
-% figure(1);
-% plot(mcis.slice(4,0),'alpha',0.5); hold on;
-% % figure(2);
-% plot(C.slice(4,0),'color','green')
-
-% figure(1);
-% plot(mcis.projection([1,2,3]),'alpha',0.5)
-% % figure(2);
-% hold on;
-% plot(C.projection([1,2,3]),'color','green')

@@ -38,10 +38,10 @@ function [cisMat] = computeCIS(A,B,G,F,Gu,Fu,method,L,E,Gw,Fw,verbose)
 %           Gw,Fw: matrices defining the disturb. set: {w \in \R^k | Gw w <= Fw}
 %                  if there is no disturbance use E = [], Gu = [], Fu = [].
 %
-%           method: available methods CDC19, HSCC20, CDC20a, CDC20b.
-%                  in the case of disturbance choose CDC20b.
+%           method: available methods CDC19, HSCC20, ACC21a, ACC21b.
+%                  in the case of disturbance choose ACC21b.
 %
-%              L : lentgh of the loop for HSCC20, CDC20a, CDC20b (L>0 int.)
+%              L : lentgh of the loop for HSCC20, ACC21a, ACC21b (L>0 int.)
 %
 %           verbose = 0 - no messages; 1 - displays messages.
 %
@@ -72,7 +72,7 @@ else
 end
 
 %% Construct D_k
-% This is for CDC20b only.
+% This is for ACC21b only.
 if (disturbance)
     % Minkowski difference for the closed-form expression.
     G_k = cell(n,1);
@@ -105,10 +105,10 @@ elseif (strcmp(method,'HSCC20'))
     else
         [cisLiftedA,cisLiftedb] = hscc20(A,B,G,F,L,verbose);
     end
-elseif (strcmp(method,'CDC20a'))
-    [cisLiftedA,cisLiftedb] = cdc20a(A,G,F,L,verbose);
-elseif (strcmp(method,'CDC20b'))
-    [cisLiftedA,cisLiftedb] = cdc20b(A,G,F,G_k,F_k,L,verbose);
+elseif (strcmp(method,'ACC21a'))
+    [cisLiftedA,cisLiftedb] = acc21a(A,G,F,L,verbose);
+elseif (strcmp(method,'ACC21b'))
+    [cisLiftedA,cisLiftedb] = acc21b(A,G,F,G_k,F_k,L,verbose);
 else
     error('Invalid method.');
 end
