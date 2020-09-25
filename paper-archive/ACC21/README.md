@@ -1,4 +1,4 @@
-# A simple hierarchy for computing controlled invariant sets
+# An enhanced hierarchy for (robust) controlled invariance
 
 The provided code computes a hierarchy of Controlled Invariant Sets of a Polyhedron for the class of Controllable Discrete-time Linear Systems. It is an implementation in MATLAB of the algorithm proposed in:
 
