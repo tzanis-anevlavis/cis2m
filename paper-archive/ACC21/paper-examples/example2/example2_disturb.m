@@ -67,7 +67,8 @@ if (isempty(gcp('nocreate')))
 end
 
 % Length of loops:
-Loops = (1:6);
+% Loops = (1:6);
+Loops = 4;
 Lmax = length(Loops);
 
 % Results matrices:
@@ -90,9 +91,10 @@ for l=1:Lmax
 end
 
 disp(Times)
-disp(Volumes)
 
 VolumePercentage = Volumes{mm}./volumeMCIS*100;
+
+disp(VolumePercentage)
 
 %% MPT3
 % c2 = tic;

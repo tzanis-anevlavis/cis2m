@@ -92,7 +92,7 @@ for mm = 1:numMethods
         t2  = tic;
         cisMat = computeCIS(A,B,G,F,Gu,Fu,method,L);
         Times{mm}(l) = toc(t2);
-        disp(Times{mm}(l));
+        %disp(Times{mm}(l));
         cis{mm}(l) = Polyhedron('H', cisMat);
         
         guard = isInvariant(cis{mm}(l),A,B);
@@ -107,8 +107,11 @@ for mm = 1:numMethods
         end
         
         Volumes{mm}(l) = cis{mm}(l).volume;
-        disp(Volumes{mm}(l));
+        %disp(Volumes{mm}(l));
     end
     
     VolumePercentage{mm} = Volumes{mm}./volumeMCIS*100;
+
+    disp(Times{mm})
+    disp(VolumePercentage{mm})
 end
