@@ -9,8 +9,8 @@ The proposed methods are based on an idea that works in two moves:
 The following different methods are available to choose from:
 1. [CDC19](https://github.com/janis10/cis2m/tree/master/paper-archive/CDC19) - typically efficient for systems up to 7-8 dimensions.
 2. [HSCC20](https://github.com/janis10/cis2m/tree/master/paper-archive/HSCC20) - a hierarchy for computing larger controlled invariant sets. 
-3. [CDC20a] - same hierarchy as HSCC20, with superior computational efficiency. 
-4. [CDC20b] - a less conservative hierarchy guaranteed to always include the results of [HSCC20/CDC20a] (preferred method).
+3. [ACC21a] - same hierarchy as HSCC20, with superior computational efficiency. 
+4. [ACC21b] - a less conservative hierarchy guaranteed to always include the results of [HSCC20/CDC20a] (preferred method).
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
@@ -34,7 +34,7 @@ The main wrapper function for this code is `computeCIS(A,B,G,F,Gu,Fu,method,verb
   * `A` and `B` are matrices that define your discrete-time linear system `x^+ = Ax + Bu`.
   * `G` and `f` are matrices that define the polyhedral safe set `D = {x \in \R^n | Gx <= F}`.
   * `Gu` and `fu` are similarly matrices that define the polyhedral constraints on the input `u`, i.e., `Du = {u \in \R | Gu u <= Fu}`. For unconstrained input use `[]` at each entry `Gu`, `Fu`.
-  * `method` is either `'CDC19'`, `'HSCC20'`, `'CDC20a'`, or `'CDC20b'`. More details for each method in the corresponding folders.
+  * `method` is either `'CDC19'`, `'HSCC20'`, `'ACC21a'`, or `'ACC21b'`. More details for each method in the corresponding folders.
   * `verbose` is `0` for silent output, or `1`for verbose. Default is `0`.
 
 The function will return a controlled invariant subset of D in the form of a matrix `[Gcis Fcis]` such that `CIS = {x \in \R^n | Gcis x <= Fcis}`.
