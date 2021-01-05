@@ -95,7 +95,7 @@ else
     elseif (~isempty(Gw) && ~isempty(Fu))
         if (size(Gw,1)~=size(Fw,1))
             error('Dimensions (number of rows) of Gw and Fw do not match.')
-        elseif (size(E,2)~=size(Gu,2))
+        elseif (size(E,2)~=size(Gw,2))
             error('Dimensions (number of columns) of E and Gw do not match.')
         else
             W = Polyhedron('H',[Gw Fw]);
