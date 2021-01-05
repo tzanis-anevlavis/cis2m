@@ -1,4 +1,4 @@
-function [mcisA,mcisb] = acc21b(Ac,Gc,F,G_k,F_k,L,verbose)
+function [mcisA,mcisb] = closedformCIS(Ac,Bc,Gc,F,G_k,F_k,L,nmax,verbose)
 %% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada (alphabetically)
 % Copyright (C) 2020, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
@@ -30,48 +30,37 @@ if (verbose)
     disp('Lifting problem to compute controlled invariant set in closed-form . . .')
 end
 
-n = size(Ac,1);
-k = size(Gc,1);
+n = size(Ac,2);
+m = size(Bc,2);
 
-dbar = floor(n/L);
-S = [zeros(L-1,1) eye(L-1); 1 zeros(1,L-1)];
-I = repmat(eye(L),dbar,1);
-P = [I; eye(n-dbar*L) zeros(n-dbar*L,(1+dbar)*L-n)];
-
-%% Step 0 constraints:
-% Gc x \leq F
-G0 = [Gc zeros(k,L)];
-F0 = F;
-
-%% Step 1 to n-1 constraints:
-G1n1 = [];
-F1n1 = [];
-
-for s = 1:n-1
-    sbar = min(s,n);
-    T = [[zeros(n-sbar,sbar); eye(sbar)] zeros(n,n-sbar) ];
-    
-    G1n1 = [G1n1; G_k{s}*Ac^s G_k{s}*T*P];
-    F1n1 = [F1n1; F_k{s}];
+%% Construct the high-dimensional dynamical system:
+Ti = [1 zeros(1,L-1)];
+T = [];
+Pi = [zeros(L-1,1) eye(L-1); 1 zeros(1,L-1)];
+P = [];
+for i = 1:m
+    T = blkdiag(T,Ti);
+    P = blkdiag(P,Pi);
 end
 
-%% Step n to n+L-1 constraints:
-GnL1 = [];
-FnL1 = [];
+% [ z+ ]        [   Abru    Bbru    0   ] [z]
+% [ u+ ]  =     [   0       0       T   ] [u]
+% [ v+ ]        [   0       0       P   ] [v]
+A_hd = [Ac             Bc*T;
+        zeros(L*m,n)    P   ];
 
-for s = n:n+L-1
-    sbar = min(s,n);
-    T = [[zeros(n-sbar,sbar); eye(sbar)] zeros(n,n-sbar) ];
-    
-    GnL1 = [GnL1; zeros(size(G_k{n},1),n) G_k{n}*T*P*S^(s-1)];
-    FnL1 = [FnL1; F_k{n}];
+%% Construct high-dimensional invariant set:
+% Initial:
+mcisA = [Gc zeros(size(Gc,1),m*L)];
+mcisb = F;
+A_curr = A_hd;
+% Constrained reachability:
+for t = 1:nmax+L-1
+    tbar = min(t,nmax);
+    mcisA = [mcisA; [G_k{tbar} zeros(size(G_k{tbar},1),m*L)]*A_curr];
+    mcisb = [mcisb; F_k{tbar}];
+    A_curr = A_hd * A_curr;
 end
-
-%% Construct the final set:
-finalSet = [G0 F0; G1n1 F1n1; GnL1 FnL1];
-
-mcisA = finalSet(:,1:end-1);
-mcisb = finalSet(:,end);
 
 if (verbose)
     disp('..computed!')

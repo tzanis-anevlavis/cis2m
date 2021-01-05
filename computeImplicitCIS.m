@@ -1,4 +1,4 @@
-function [cisA, cisb] = computeCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
+function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2020, Tzanis Anevlavis
 %
@@ -31,24 +31,21 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
 % Computes a  (robust) Controlled Invariant Subset of the safe set.
 %
 % Inputs:   A, B : matrices defining the discrete-time LTI: x+ = Ax + Bu
-%           Gx,Fx: matrices defining the safe set: {x \in \R^n | Gx x <= Fx}
+%           Gx,Fx: matrices defining the safe set: {x \in \R^n | G x <= F}
 %           Gu,Fu: matrices defining the input constr: {u \in \R | Gu u <= Fu}
 %                  if there are no input constraints use Gu = [], Fu = [].
 %              E : disturbance matrix if the system is: x+ = Ax + Bu + Ew
 %           Gw,Fw: matrices defining the disturb. set: {w \in \R^k | Gw w <= Fw}
 %                  if there is no disturbance use E = [], Gw = [], Fw = [].
 %
-%           method: if not specified the default (best for most scenarios)
-%           algorithm will be selected -- legacy options for reference to
-%           our papers:
-%                       CDC19, HSCC20, ACC21a, ACC21b.
-%
 %              L : lentgh of the loop for HSCC20, ACC21a, ACC21b (L>0 int.)
 %
 %           verbose = 0 - no messages; 1 - displays messages.
 %
-% Output:   [cisA, cib]: matrix defining the computed Controlled Invariant Set
-%                   s.t. CIS = {x \in \R^n | cisA x <= cisb}
+% Output:   [Gstate,Ginput,Gvirtual,flifted] : representation of the
+%                   implicit controlled invariant set in the form:
+%                   Gstate x + Ginput u + Gvirtual v <= flifted. 
+%                   with x \in \R^n, u \in \R^m, and v \in \R^{L x m}. 
 
 %% Add support folder to path
 % addpath('./support_functions/');
@@ -57,19 +54,21 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
 inputArgCheck
 
 %% Convert system in Brunovsky normal form space, and extend state space:
-[Ac,Bc,Ec,Gc,Fc,Pmat,~,nmax,~,~,isExtended] = convert2Bru(A,B,E,Gx,Fx,Gu,Fu);
-n = size(Ac,2);
-m = size(Bc,2);
+[Ac,Bc,Ec,Gc,Fc,Pmat,~,nmax,alpha,Bm,isExtended] = convert2Bru(A,B,E,Gx,Fx,Gu,Fu);
+A = Ac; B = Bc; E = Ec; Gx = Gc; Fx = Fc;
+n = size(A,2);
+m = size(B,2);
 
 %% Construct D_k
+% This is for ACC21b only.
 if (disturbance)
     % Minkowski difference for the closed-form expression.
     G_k = cell(nmax,1);
     F_k = cell(nmax,1);
     W = Polyhedron('A',Gw,'b',Fw);
-    D = Polyhedron('A',Gc,'b',Fc);
+    D = Polyhedron('A',Gx,'b',Fx);
     for i = 1:nmax
-        D = D - Ac^(i-1)*Ec*W;
+        D = D - A^(i-1)*E*W;
         D.minHRep();
         G_k{i} = D.A;
         F_k{i} = D.b;
@@ -77,7 +76,7 @@ if (disturbance)
 else
     G_k = cell(nmax,1);
     F_k = cell(nmax,1);
-    D = Polyhedron('A',Gc,'b',Fc);
+    D = Polyhedron('A',Gx,'b',Fx);
     D.minHRep();
     for i = 1:nmax
         G_k{i} = D.A;
@@ -85,70 +84,50 @@ else
     end
 end
 
-%% Controlled Invariant Set in Two Moves
+%% Controlled Invariant Set in One Move
 if (strcmp(method,'default'))
     [cisLiftedA,cisLiftedb] = closedformCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,nmax,verbose);
 else
     [cisLiftedA,cisLiftedb] = legacyCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,method,verbose);
 end
 
-% Use MPT3 and let it decide.
-P = Polyhedron('A',cisLiftedA,'b',cisLiftedb);
-P.minHRep;
-Px = P.projection(1:n,'ifourier');  
-% 'ifourier' seems to be better than 'mplp' for many cases.
-
-%% Comment out for debugging:
-% if (isExtended)
-%     % Check if result is empty:
-%     if (Px.isEmptySet)
-%         warning('result is empty');
-%     end
-%     % Check if result is contained by the safe set:
-%     Sc = Polyhedron('H',[Gc Fc]);
-%     if (~(Px <= Sc))
-%         warning('Out of safe set.');
-%     end
-%     % Check if result is numerically invariant in Brunovsky extended space:
-%     if (~isInvariant(Px,[],[],Ac,Bc))
-%         warning('Result not numerically invariant.');
-%     else
-%         disp('Invariant in Brunovsky (extended) space!')
-%     end
-% end
-
-%%
-% If there are input constraints, project from the extended space to the
-% Brunovsky space.
 if (isExtended)
-    Px = Px.projection(1:(n-m));
-end
-cisA = Px.A;
-cisb = Px.b;
-% Return to original coordinates:
-cisA = cisA*Pmat;
+    % Extract state input matrices in [z,u,v], z\in\R^n, u\in\R^m,
+    % v\in\R^mL
+    n = n-m;
 
-disp('Projection done!')
-
-%% Comment out for debugging:
-% % Check if result is empty:
-% if (Px.isEmptySet)
-%     warning('result is empty');
-% end
-% % Check if result is contained by the safe set:
-% Gbru = Gx/Pmat;
-% Fbru = Fx;
-% Dbru = Polyhedron('H',[Gbru Fbru]);
-% if (~(Px <= Dbru))
-%     warning('Out of safe set');
-% end
-% % Check if result is numerically invariant:
-% [~,~,~,~,~,~,~,~,alpha,Bm,~] = convert2Bru(A,B,E,Gx,Fx,Gu,Fu);
-% Abru = (Pmat * A) / Pmat - ((Pmat*B)/Bm)*alpha;
-% Bbru = (Pmat*B)/Bm;
-% XU = Polyhedron('H', [Gc(size(Gbru,1)+1:end,:) Fc(size(Gbru,1)+1:end)]);
-% if (~isInvariant(Px,[],XU,Abru,Bbru))
-%     warning('Result not numerically invariant');
-% else
-%     disp('Invariant in Brunovsky space!')
-% end
+    Gz = cisLiftedA(:,1:n);
+    Gv = cisLiftedA(:,n+1:n+m);
+    Gvirtual = cisLiftedA(:,n+m+1:end);
+    % up to this point it checks out as invariant wrt:
+    %       mcis = Polyhedron('H',[cisLiftedA cisLiftedb];
+    %       Gmcis = mcis.A;
+    %       fmcis = mcis.b;
+    %       Pre = Polyhedron('H', [Gmcis*A_hd fmcis]);
+    %       mcis <= Pre
+    
+    % Map back from Brunovsky to original space
+    Gstate = Gz*Pmat+Gv*alpha*Pmat;
+    Ginput = Gv*Bm;
+    
+    % ok and the set:
+%     mcis2 = Polyhedron('H',[Gstate Ginput Gvirtual Fcl]);
+%     is invariant wrt:
+%     A_hd_OG = [ A                      B                    zeros(n,L*m); 
+%                -inv(Bm)*alpha*Pmat*A  -inv(Bm)*alpha*Pmat*B T; 
+%                            zeros(L*m,n+m)                   P]
+%     
+%     Gmcis = mcis2.A;
+%     fmcis = mcis2.b;
+%     Pre = Polyhedron('H', [Gmcis*A_hd_OG fmcis]);
+%     mcis2 <= Pre
+else
+    % Extract state input matrices in y = (z,v)
+    Gz = cisLiftedA(:,1:n);
+    Gvirtual = cisLiftedA(n+1,end);
+    % Map back from Brunovsky to original space
+    Gstate = Gz*Pmat;
+    Ginput = Gvirtual(:,1:m);
+    Gvirtual = Gvirtual(:,m+1:end);
+end    
+flifted = cisLiftedb;     

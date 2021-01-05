@@ -1,6 +1,6 @@
-function [slct,growth] = jSelect(A,n)
-%% Authors: Tzanis Anevlavis.
-% Copyright (C) 2019, Tzanis Anevlavis.
+function [mcisA,mcisb] = acc21b(Ac,Bc,Gc,F,G_k,F_k,L,nmax,verbose)
+%% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada (alphabetically)
+% Copyright (C) 2020, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -24,25 +24,37 @@ function [slct,growth] = jSelect(A,n)
 %
 %
 %
-%% Description:
-% This function finds the variable that will yield the best growth if
-% eliminated by Fourier-Motzkin Elimination.
-%
-% n = number of variables we do not want to eliminate
 
-N = size(A,1);
-m = size(A,2);
 
-growth = N^2;
+if (verbose)
+    disp('Lifting problem to compute controlled invariant set in closed-form . . .')
+end
 
-for i = 1:(m-n)
-    pos = sum(A(:,n+i)>0);
-    neg = sum(A(:,n+i)<0);
-    
-    g = pos*neg - (pos+neg);
-    
-    if (g <= growth)
-        growth = g;
-        slct = n+i;
+n = size(Ac,2);
+m = size(Bc,2);
+
+%% Initial constraints:
+Gx = Gc;
+Gv = zeros(size(Gc,1),m*L);
+
+for t = 1:nmax+L-1
+    for i = 1:L
+        ABmat{i} = zeros(n,m);
     end
+    for j = 1:t
+        idx = mod(t-j+1-1,L)+1;
+        ABmat{idx} = ABmat{idx} + Ac^(j-1)*Bc;
+    end
+    tbar = min(t,nmax);
+    Gv = [Gv; G_k{tbar}*cat(2, ABmat{:})];
+    Gx = [Gx; G_k{tbar}*Ac^t];
+    F = [F; F_k{tbar}];
+end
+
+%% Construct the final set:
+mcisA = [Gx Gv];
+mcisb = F;
+
+if (verbose)
+    disp('..computed!')
 end

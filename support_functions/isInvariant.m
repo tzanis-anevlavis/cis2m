@@ -1,4 +1,4 @@
-function [isIT] = isInvariant(P,A,B)
+function [isIT] = isInvariant(X,U,XU,A,B)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2019, Tzanis Anevlavis.
 %
@@ -25,16 +25,44 @@ function [isIT] = isInvariant(P,A,B)
 %
 %
 %% Description:
-% Check if a polyhedron P is invariant with respect to a linear system:
-% x^+ = A x + B u
+% Check if a polyhedron X is invariant with respect to a linear system:
+% x^+ = A x + B u, with u \in U, and (x,u) \in XU.
 
+n = size(A,2);
+m = size(B,2);
+% Pure state constraints:
+Gx = X.A;
+Fx = X.b;
+% Pure input constraints:
+if (~isempty(U))
+    Gu = [zeros(size(U.A,1),n) U.A];
+    Fu = U.b;
+else
+    Gu = [];
+    Fu = [];
+end
+% Mixed state-input constraints:    (check this one again..)
+if (~isempty(XU))
+    Gxu = XU.A;
+    Fxu = XU.b;
+else
+    Gxu = [];
+    Fxu = [];
+end
+% Concatenate constraints:
+matW =  [Gx*A   Gx*B    Fx; 
+         Gu             Fu;        
+         Gxu            Fxu];
+% Compute Pre:
+W = Polyhedron('H', matW);
+Pre = W.projection(1:n,'ifourier');
 
-n = size(A,1);
+% % Attempt using backwards reachable set from MPT:
+% system = LTISystem('A',A,'B',B);
+% if (isempty(U))
+%     Pre = system.reachableSet('X',X,'N',1,'direction','backward');
+% else
+%     Pre = system.reachableSet('X',X,'U',U,'N',1,'direction','backward');
+% end
 
-G = P.A;
-f = P.b;
-
-W = Polyhedron('H', [G*A G*B f]);
-Pre = W.projection(1:n);
-
-isIT = (P <= Pre);
+isIT = (X <= Pre);
