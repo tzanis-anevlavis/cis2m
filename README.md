@@ -1,16 +1,12 @@
 # Controlled Invariant Sets in 2 Moves (cis2m)
 
-This repository contains different algorithms that compute Controlled Invariant Sets (CISs) of Polyhedra for the class of Controllable Discrete-time Time-invariant Linear Systems. 
+This repository is dedicated to the computation of Controlled Invariant Sets (CISs) of Polyhedral Safe Sets for the class of Controllable Discrete-time Time-invariant Linear Systems. 
 
-The proposed methods are based on an idea that works in two moves:
+The proposed algorithm is based on an idea that works in two moves:
 1. The problem is lifted in a higher dimensional space, where the Maximal Controlled Invariant Set (MCIS) is computed exactly and in closed-form.
 2. The above MCIS is projected back to the original space, where it constitutes a CIS for the original problem.
 
-The following different methods are available to choose from:
-1. [CDC19](https://github.com/janis10/cis2m/tree/master/paper-archive/CDC19) - typically efficient for systems up to 7-8 dimensions.
-2. [HSCC20](https://github.com/janis10/cis2m/tree/master/paper-archive/HSCC20) - a hierarchy for computing larger controlled invariant sets. 
-3. [ACC21a] - same hierarchy as HSCC20, with superior computational efficiency. 
-4. [ACC21b] - a less conservative hierarchy guaranteed to always include the results of [HSCC20/CDC20a] (preferred method).
+Moreover, a hierarchy of CISs is established, which is parameterized by a positive integer denoting the level of the hierarchy. Typically higher levels of the hierarchy correspond to larger CISs (see Section 4.6 [AT20](https://dl.acm.org/doi/abs/10.1145/3365365.3382205) for more information).
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
@@ -26,18 +22,20 @@ In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Compu
 For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 
 ### Dependencies:
-The current version of the repository makes use of the Multi-Parametric Toolbox 3.0:
+The current version of the repository makes use of the Multi-Parametric Toolbox 3.0 to handle projections of polytopes:
 M. Herceg, M. Kvasnica, C. Jones, and M. Morari. Multi-Parametric Toolbox 3.0. In Proc. of the European Control Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510. http://control.ee.ethz.ch/mpt .
 
 ### Quick-start:
-The main wrapper function for this code is `computeCIS(A,B,G,F,Gu,Fu,method,verbose)`:
-  * `A` and `B` are matrices that define your discrete-time linear system `x^+ = Ax + Bu`.
-  * `G` and `f` are matrices that define the polyhedral safe set `D = {x \in \R^n | Gx <= F}`.
-  * `Gu` and `fu` are similarly matrices that define the polyhedral constraints on the input `u`, i.e., `Du = {u \in \R | Gu u <= Fu}`. For unconstrained input use `[]` at each entry `Gu`, `Fu`.
-  * `method` is either `'CDC19'`, `'HSCC20'`, `'ACC21a'`, or `'ACC21b'`. More details for each method in the corresponding folders.
+The main wrapper function for this code is `computeCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)`:
+  * `A`, `B`, and `E` are matrices that define the discrete-time linear system `x^+ = Ax + Bu + Ew`.
+  * `Gx` is a matrix, and `Fx` is a vector that define the polyhedral safe set `Sx = {x \in \R^n | Gx x <= Fx}`.
+  * `L` is a positive integer denoting the level of the hierarchy. Typically larger values of `L` correspond to larger CISs (see Section 4.6 [AT20](https://dl.acm.org/doi/abs/10.1145/3365365.3382205) for more information).
+  * `Gu` and `Fu` similarly define polyhedral input constraints `Su = {u \in \R^m | Gu u <= Fu}`. For unconstrained input use `Gu = []`, `Fu = []`.
+  * `Gw` and `Fw` similarly define the disturbance set `Sw = {w \in \R^k | Gw w <= Fw}`. In absense of disturbance use `E = []`, `Gw = []`, `Fw = []`.
+  * `method`: if not specified the default (best for most scenarios) algorithm will be selected (recommended). Legacy options for reference to the specific paper results are: `CDC19`, `HSCC20`, `ACC21a`, `ACC21b`.
   * `verbose` is `0` for silent output, or `1`for verbose. Default is `0`.
 
-The function will return a controlled invariant subset of D in the form of a matrix `[Gcis Fcis]` such that `CIS = {x \in \R^n | Gcis x <= Fcis}`.
+The function will return a controlled invariant subset of `Sx` in the form of a tuple `(Gcis, Fcis)` such that `CIS = {x \in \R^n | Gcis x <= Fcis}`.
 
 ### Citations:
 If you used our algorithm for computing controlled invariant sets please cite as:
@@ -72,4 +70,3 @@ number={},
 doi = {10.1109/CDC40024.2019.9029610},
 pages={6248-6254},}
 ```
-depending on the version you used!
