@@ -1,5 +1,5 @@
-function [mcisA,mcisb] = closedformCIS(Ac,Bc,Gc,F,G_k,F_k,T,L,nmax,verbose)
-%% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
+function [mcisA,mcisb] = closedformCIS_old(Ac,Bc,Gc,F,G_k,F_k,L,nmax,verbose)
+%% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada (alphabetically)
 % Copyright (C) 2020, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
 % This program is free software: you can redistribute it and/or modify
@@ -33,34 +33,27 @@ end
 n = size(Ac,2);
 m = size(Bc,2);
 
-%% Construct the high-dimensional dynamical system:
-Ki = [1 zeros(1,T+L-1)];
-K = [];
-Pi = [zeros(T+L-1,1) eye(T+L-1); zeros(1,T) 1 zeros(1,L-1)];
-P = [];
-for i = 1:m
-    K = blkdiag(K,Ki);
-    P = blkdiag(P,Pi);
-end
+%% Initial constraints:
+Gx = Gc;
+Gv = zeros(size(Gc,1),m*L);
 
-% [ z+ ]        [   Abru    Bbru    0   ] [z]
-% [ u+ ]  =     [   0       0       K   ] [u]
-% [ v+ ]        [   0       0       P   ] [v]
-A_hd = [Ac                  Bc*K;
-        zeros((T+L)*m,n)    P   ];
-
-%% Construct high-dimensional invariant set:
-% Initial:
-mcisA = [Gc zeros(size(Gc,1),m*(T+L))];
-mcisb = F;
-A_curr = A_hd;
-% Constrained reachability:
-for t = 1:nmax+(T+L)-1
+for t = 1:nmax+L-1
+    for i = 1:L
+        ABmat{i} = zeros(n,m);
+    end
+    for j = 1:t
+        idx = mod(t-j+1-1,L)+1;
+        ABmat{idx} = ABmat{idx} + Ac^(j-1)*Bc;
+    end
     tbar = min(t,nmax);
-    mcisA = [mcisA; [G_k{tbar} zeros(size(G_k{tbar},1),m*(T+L))]*A_curr];
-    mcisb = [mcisb; F_k{tbar}];
-    A_curr = A_hd * A_curr;
+    Gv = [Gv; G_k{tbar}*cat(2, ABmat{:})];
+    Gx = [Gx; G_k{tbar}*Ac^t];
+    F = [F; F_k{tbar}];
 end
+
+%% Construct the final set:
+mcisA = [Gx Gv];
+mcisb = F;
 
 if (verbose)
     disp('..computed!')

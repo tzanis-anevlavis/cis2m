@@ -1,4 +1,4 @@
-function [cisA, cisb] = computeCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
+function [cisA, cisb] = computeCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2020, Tzanis Anevlavis
 %
@@ -87,7 +87,7 @@ end
 
 %% Controlled Invariant Set in Two Moves
 if (strcmp(method,'default'))
-    [cisLiftedA,cisLiftedb] = closedformCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,nmax,verbose);
+    [cisLiftedA,cisLiftedb] = closedformCIS(Ac,Bc,Gc,Fc,G_k,F_k,T,L,nmax,verbose);
 else
     [cisLiftedA,cisLiftedb] = legacyCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,method,verbose);
 end
