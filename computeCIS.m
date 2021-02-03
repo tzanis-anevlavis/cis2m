@@ -30,12 +30,11 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 % Takes as input a discete-time linear system and a polyhedral safe set.
 % Computes a  (robust) Controlled Invariant Subset of the safe set.
 %
-% Inputs:   A, B : matrices defining the discrete-time LTI: x+ = Ax + Bu
-%           Gx,Fx: matrices defining the safe set: {x \in \R^n | Gx x <= Fx}
-%           Gu,Fu: matrices defining the input constr: {u \in \R | Gu u <= Fu}
+% Inputs:   A,B,E : matrices defining the discrete-time LTI: x+ = Ax + Bu + Ew
+%           Gx,Fx: define the safe set: {x \in \R^n | Gx x <= Fx}
+%           Gu,Fu: define the input constr: {u \in \R | Gu u <= Fu}
 %                  if there are no input constraints use Gu = [], Fu = [].
-%              E : disturbance matrix if the system is: x+ = Ax + Bu + Ew
-%           Gw,Fw: matrices defining the disturb. set: {w \in \R^k | Gw w <= Fw}
+%           Gw,Fw: define the disturbance set: {w \in \R^k | Gw w <= Fw}
 %                  if there is no disturbance use E = [], Gw = [], Fw = [].
 %
 %           method: if not specified the default (best for most scenarios)
@@ -43,7 +42,8 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %           our papers:
 %                       CDC19, HSCC20, ACC21a, ACC21b.
 %
-%              L : lentgh of the loop for HSCC20, ACC21a, ACC21b (L>0 int.)
+%              L : denotes the level of the hierarchy (L-invariance).
+%              T : transient before L (TL-invariance).
 %
 %           verbose = 0 - no messages; 1 - displays messages.
 %
@@ -51,7 +51,7 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %                   s.t. CIS = {x \in \R^n | cisA x <= cisb}
 
 %% Add support folder to path
-% addpath('./support_functions/');
+addpath('./support_functions/');
 
 %% Input arguments check
 inputArgCheck

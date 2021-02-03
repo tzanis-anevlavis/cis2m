@@ -1,4 +1,4 @@
-function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,L,Gu,Fu,E,Gw,Fw,method,verbose)
+function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2020, Tzanis Anevlavis
 %
@@ -30,15 +30,20 @@ function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,L,Gu,Fu
 % Takes as input a discete-time linear system and a polyhedral safe set.
 % Computes a  (robust) Controlled Invariant Subset of the safe set.
 %
-% Inputs:   A, B : matrices defining the discrete-time LTI: x+ = Ax + Bu
-%           Gx,Fx: matrices defining the safe set: {x \in \R^n | G x <= F}
-%           Gu,Fu: matrices defining the input constr: {u \in \R | Gu u <= Fu}
+% Inputs:   A,B,E : matrices defining the discrete-time LTI: x+ = Ax + Bu + Ew
+%           Gx,Fx: define the safe set: {x \in \R^n | Gx x <= Fx}
+%           Gu,Fu: define the input constr: {u \in \R | Gu u <= Fu}
 %                  if there are no input constraints use Gu = [], Fu = [].
-%              E : disturbance matrix if the system is: x+ = Ax + Bu + Ew
-%           Gw,Fw: matrices defining the disturb. set: {w \in \R^k | Gw w <= Fw}
+%           Gw,Fw: define the disturbance set: {w \in \R^k | Gw w <= Fw}
 %                  if there is no disturbance use E = [], Gw = [], Fw = [].
 %
-%              L : lentgh of the loop for HSCC20, ACC21a, ACC21b (L>0 int.)
+%           method: if not specified the default (best for most scenarios)
+%           algorithm will be selected -- legacy options for reference to
+%           our papers:
+%                       CDC19, HSCC20, ACC21a, ACC21b.
+%
+%              L : denotes the level of the hierarchy (L-invariance).
+%              T : transient before L (TL-invariance).
 %
 %           verbose = 0 - no messages; 1 - displays messages.
 %
@@ -48,7 +53,7 @@ function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,L,Gu,Fu
 %                   with x \in \R^n, u \in \R^m, and v \in \R^{L x m}. 
 
 %% Add support folder to path
-% addpath('./support_functions/');
+addpath('./support_functions/');
 
 %% Input arguments check
 inputArgCheck
@@ -86,7 +91,7 @@ end
 
 %% Controlled Invariant Set in One Move
 if (strcmp(method,'default'))
-    [cisLiftedA,cisLiftedb] = closedformCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,nmax,verbose);
+    [cisLiftedA,cisLiftedb] = closedformCIS(Ac,Bc,Gc,Fc,G_k,F_k,T,L,nmax,verbose);
 else
     [cisLiftedA,cisLiftedb] = legacyCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,method,verbose);
 end
