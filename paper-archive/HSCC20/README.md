@@ -1,42 +1,50 @@
-# A simple hierarchy for computing controlled invariant sets
+# Replication Instructions
+This folder contains the examples presented in: Tzanis Anevlavis and Paulo Tabuada, "A simple hierarchy for computing controlled invariant sets", In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
 
-The provided code computes a hierarchy of Controlled Invariant Sets of a Polyhedron for the class of Controllable Discrete-time Linear Systems. It is an implementation in MATLAB of the algorithm proposed in:
 
-Tzanis Anevlavis and Paulo Tabuada, 
-"A simple hierarchy for computing controlled invariant sets", 
-In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
+### Requirements:
+	* MATLAB (written and tested in R2018a or later).
+	* Parallel Computation Toolbox (optional for improved performance).
+	* Multi-Parametric Toolbox (MPT) for MATLAB, available at:
+		https://www.mpt3.org
+	* YALMIP:
+		included in MPT3 above.
+	* MOSEK v8.1.0.75 (or newer) available at:
+		https://www.mosek.com/downloads/8.1.0.75/
+	* Julia 1.0.5, available at:
+		https://julialang.org/downloads/
+	* Tested in: macOS v10.14 or higher, and Windows 10.
 
-In the `paper-examples` folder you can find the files and the instructions on how to replicate all the examples of the above paper.
-
-For any comments contact Tzanis Anevlavis @ janis10@ucla.edu. 
-
-### Dependencies:
-The current version of the repository makes use of the Multi-Parametric Toolbox 3.0:
-M. Herceg, M. Kvasnica, C. Jones, and M. Morari. Multi-Parametric Toolbox 3.0. In Proc. of the European Control Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510. http://control.ee.ethz.ch/mpt .
-
-### Related publications
-1. Tzanis Anevlavis and Paulo Tabuada, 
-"A simple hierarchy for computing controlled invariant sets", 
-In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Computation and Control (HSCC'20).
-
-### Citations:
-If you used our algorithm for computing controlled invariant sets please cite as:
-```latex
-@inproceedings{AT2020cis2mHier
- author = {Anevlavis, Tzanis and Tabuada, Paulo},
- title = {A simple hierarchy for computing controlled invariant sets},
- booktitle = {Proceedings of the 23Rd ACM International Conference on Hybrid Systems: Computation and Control},
- series = {HSCC '20},
- year = {2020},
- isbn = {978-1-4503-7018-9/20/04},
- location = {Sydney, NSW, Australia},
- pages = {},
- numpages = {11},
- url = {http://doi.acm.org/10.1145/3365365.3382205},
- doi = {10.1145/3365365.3382205},
- acmid = {},
- publisher = {ACM},
- address = {New York, NY, USA},
- keywords = {Controller Synthesis, Safety, Controlled Invariance},
-} 
-```
+### Installation/Imports:
+	* For MPT the instructions at:
+      			https://www.mpt3.org/Main/Installation
+      	suffice.
+	* For MOSEK the simple instructions at:
+			https://docs.mosek.com/8.1/toolbox/install-interface.html
+		suffice. Make sure to get a free license and add it before using MOSEK. 
+		A trial license can be found here:
+		https://www.mosek.com/products/trial/
+		and an academic license here:
+		https://www.mosek.com/products/academic-licenses/. 
+		Simple instructions to place the license into the correct directory can be found here: 
+		https://docs.mosek.com/9.1/licensing/quickstart.html.
+	* For Julia:
+		1) Download and install the executable file depending on your OS.
+		2) Open Julia.
+		3) Type the following commands:
+			* import(Pkg)                     \hit enter
+			* Pkg.add("IJulia")               \hit enter
+			* Pkg.add("SwitchOnSafety")       \hit enter
+			* Pkg.add("JuMP")                 \hit enter
+			* Pkg.add("Polyhedra")            \hit enter
+			* Pkg.add("MathematicalSystems")  \hit enter
+			* Pkg.add("MosekTools")           \hit enter
+			* Pkg.add("LinearAlgebra")        \hit enter
+			* Pkg.add("Plots")                \hit enter
+		   This adds all the required packages in Julia.
+		4) Type:
+			using IJulia	\hit enter
+			notebook()	\hit enter
+		   Here you might be prompted to install Conda and Jupyter.
+		   We recommend that you do so, as to smoothly replicate the results.
+		   Successfully completing this step will open Jupyter Notebook in your browser.
