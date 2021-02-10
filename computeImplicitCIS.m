@@ -53,7 +53,7 @@ function [Gstate,Ginput,Gvirtual,flifted] = computeImplicitCIS(A,B,Gx,Fx,T,L,Gu,
 %                   with x \in \R^n, u \in \R^m, and v \in \R^{L x m}. 
 
 %% Add support folder to path
-addpath('./support_functions/');
+% addpath('./support_functions/');
 
 %% Input arguments check
 inputArgCheck
@@ -104,26 +104,20 @@ if (isExtended)
     Gz = cisLiftedA(:,1:n);
     Gv = cisLiftedA(:,n+1:n+m);
     Gvirtual = cisLiftedA(:,n+m+1:end);
-    % up to this point it checks out as invariant wrt:
-    %       mcis = Polyhedron('H',[cisLiftedA cisLiftedb];
-    %       Gmcis = mcis.A;
-    %       fmcis = mcis.b;
-    %       Pre = Polyhedron('H', [Gmcis*A_hd fmcis]);
-    %       mcis <= Pre
     
     % Map back from Brunovsky to original space
     Gstate = Gz*Pmat+Gv*alpha*Pmat;
     Ginput = Gv*Bm;
     
-    % ok and the set:
-%     mcis2 = Polyhedron('H',[Gstate Ginput Gvirtual Fcl]);
+ %    % The lifted set:
+%     mcis = Polyhedron('H',[Gstate Ginput Gvirtual Fcl]);
 %     is invariant wrt:
 %     A_hd_OG = [ A                      B                    zeros(n,L*m); 
 %                -inv(Bm)*alpha*Pmat*A  -inv(Bm)*alpha*Pmat*B T; 
 %                            zeros(L*m,n+m)                   P]
 %     
-%     Gmcis = mcis2.A;
-%     fmcis = mcis2.b;
+%     Gmcis = mcis.A;
+%     fmcis = mcis.b;
 %     Pre = Polyhedron('H', [Gmcis*A_hd_OG fmcis]);
 %     mcis2 <= Pre
 else

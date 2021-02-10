@@ -51,7 +51,7 @@ function [cisA, cisb] = computeCIS(A,B,Gx,Fx,T,L,Gu,Fu,E,Gw,Fw,method,verbose)
 %                   s.t. CIS = {x \in \R^n | cisA x <= cisb}
 
 %% Add support folder to path
-addpath('./support_functions/');
+% addpath('./support_functions/');
 
 %% Input arguments check
 inputArgCheck
