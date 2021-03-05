@@ -14,8 +14,6 @@ The following video presents how our method of computing controlled invariant se
 
 https://user-images.githubusercontent.com/26322321/110176692-927c3480-7db8-11eb-8a88-5ee0f6d6a859.mp4
 
-Test.
-
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
