@@ -6,7 +6,16 @@ The proposed algorithm is based on an idea that works in two moves:
 1. The problem is lifted in a higher dimensional space, where the Maximal Controlled Invariant Set (MCIS) is computed exactly and in closed-form.
 2. The above MCIS is projected back to the original space, where it constitutes a CIS for the original problem.
 
-Moreover, a hierarchy of CISs is established, which is parameterized by a positive integer denoting the level of the hierarchy. Typically higher levels of the hierarchy correspond to larger CISs (see Section 4.6 [AT20](https://dl.acm.org/doi/abs/10.1145/3365365.3382205) for more information).
+Moreover, a hierarchy of CISs is established, which is parameterized by a positive integer denoting the level of the hierarchy. Typically higher levels of the hierarchy correspond to larger CISs (see Section 4.6 [AT20](https://dl.acm.org/doi/abs/10.1145/3365365.3382205) for more information). 
+
+
+The following video presents how our method of computing controlled invariant sets guarantees collision-free trajectories when supervising a Crazyflie 2.0 quadrotor for the task of obstacle avoidance!
+
+
+https://user-images.githubusercontent.com/26322321/110176692-927c3480-7db8-11eb-8a88-5ee0f6d6a859.mp4
+
+
+
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
