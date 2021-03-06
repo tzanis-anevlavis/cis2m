@@ -11,9 +11,10 @@ Moreover, a hierarchy of CISs is established, which is parameterized by a positi
 
 The following video presents how our method of computing controlled invariant sets guarantees collision-free trajectories when supervising a Crazyflie 2.0 quadrotor for the task of obstacle avoidance!
 
-![ezgif com-optimize](https://user-images.githubusercontent.com/26322321/110188128-851e7480-7dcf-11eb-9d5f-f3c4850a1a4e.gif)
+![ezgif com-optimize](https://user-images.githubusercontent.com/26322321/110197476-9cc22100-7e00-11eb-9694-01c5a55fba4b.gif)
 
-Video here: https://user-images.githubusercontent.com/26322321/110176692-927c3480-7db8-11eb-8a88-5ee0f6d6a859.mp4
+
+Full video [here](https://github.com/janis10/cis2m/tree/master/videos).
 
 
 
