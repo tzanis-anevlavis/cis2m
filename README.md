@@ -9,13 +9,12 @@ The proposed algorithm is based on an idea that works in two moves:
 Moreover, a hierarchy of CISs is established, which is parameterized by a positive integer denoting the level of the hierarchy. Typically higher levels of the hierarchy correspond to larger CISs (see Section 4.6 [AT20](https://dl.acm.org/doi/abs/10.1145/3365365.3382205) for more information). 
 
 
-The following video presents how our method of computing controlled invariant sets guarantees collision-free trajectories when supervising a Crazyflie 2.0 quadrotor for the task of obstacle avoidance!
+The following video demonstrates how our method of computing controlled invariant sets guarantees collision-free trajectories when supervising a Crazyflie 2.0 quadrotor for the task of obstacle avoidance!
 
 ![ezgif com-optimize](https://user-images.githubusercontent.com/26322321/110197476-9cc22100-7e00-11eb-9694-01c5a55fba4b.gif)
 
 
-Full video [here](https://github.com/janis10/cis2m/tree/master/videos).
-
+Full video [here](https://tinyurl.com/drone-supervision-cis).
 
 
 ### Related publications
