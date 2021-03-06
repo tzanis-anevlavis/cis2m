@@ -11,14 +11,16 @@ Moreover, a hierarchy of CISs is established, which is parameterized by a positi
 
 The following video presents how our method of computing controlled invariant sets guarantees collision-free trajectories when supervising a Crazyflie 2.0 quadrotor for the task of obstacle avoidance!
 
+![ezgif com-optimize](https://user-images.githubusercontent.com/26322321/110188128-851e7480-7dcf-11eb-9d5f-f3c4850a1a4e.gif)
 
-https://user-images.githubusercontent.com/26322321/110176692-927c3480-7db8-11eb-8a88-5ee0f6d6a859.mp4
+Video here: https://user-images.githubusercontent.com/26322321/110176692-927c3480-7db8-11eb-8a88-5ee0f6d6a859.mp4
+
 
 
 ### Related publications
 1. Tzanis Anevlavis and Paulo Tabuada, 
 "Computing controlled invariant sets in two moves", 
-In 2019 IEEE Conference on Decision and Control (CDC). [AT19](https://ieeexplore.ieee.org/document/9029610). [Preprint](http://sites.google.com/a/g.ucla.edu/tzanis/home/anevlavisCDC2019.pdf).
+In 2019 IEEE Conference on Decision and Control (CDC). [AT19](https://ieeexplore.ieee.org/document/9029610).
 
 2. Tzanis Anevlavis and Paulo Tabuada, 
 "A simple hierarchy for computing controlled invariant sets", 
