@@ -1,5 +1,5 @@
 %% Authors: Tzanis Anevlavis.
-% Copyright (C) 2019, Tzanis Anevlavis.
+% Copyright (C) 2021, Tzanis Anevlavis.
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 % This code is part of the Controlled Invariance in 2 Moves repository
 % (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
-% For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
+% For any comments contact Tzanis Anevlavis @ t.anevlavis@ucla.edu.
 %
 %
 %
@@ -26,14 +26,13 @@
 %% Description:
 % Input arguments check.
 
-% If no verbose, choose silent mode.
-if (~exist('verbose','var'))
-    verbose = 0;
-end
-
 % Check state constraints and system:
-if (~exist('Gx','var') || ~exist('Fx','var'))
-    error('State constraints not specified.');
+if (~exist('Gx','var') && ~exist('Fx','var'))
+    error('State constraints not specified.')
+elseif (exist('Gx','var') && ~exist('Fx','var'))
+    error('State constraints incomplete: Matrix Gx given, but not vector Fx.')
+elseif (~exist('Gx','var') && exist('Fx','var'))
+    error('State constraints incomplete: Vector Fx given, but not matrix Gx.')
 end
 if (size(Gx,1)~=size(Fx,1))
     error('Rows of Gx and Fx do not match.')
@@ -47,9 +46,9 @@ end
 if (~exist('Gu','var') && ~exist('Fu','var'))
     Gu = [];    Fu = [];
 elseif (exist('Gu','var') && ~exist('Fu','var'))
-    error('Matrix Gu given, but not vector Fu.')
+    error('Input constraints incomplete: Matrix Gu given, but not vector Fu.')
 elseif (~exist('Gu','var') && exist('Fu','var'))
-    error('Vector Fu given, but not matrix Gu.')
+    error('Input constraints incomplete: Vector Fu given, but not matrix Gu.')
 elseif (~isempty(Gu) && ~isempty(Fu))
     if (size(Gu,1)~=size(Fu,1))
         error('Rows of Gu and Fu do not match.')
@@ -58,18 +57,16 @@ elseif (~isempty(Gu) && ~isempty(Fu))
     end
 end
 
-% Disturbance matrix:
+% Disturbance matrix and set. If no disturbance set E=[], Gw=[], Fw=[].
 if (~exist('E','var') || isempty(E))
-    disturbance = false;
-    E = zeros(size(A,2),1); Gw = []; Fw = [];
+    E = []; Gw = []; Fw = [];
 else
-    disturbance = true;
     if (~exist('Gw','var') && ~exist('Fw','var'))
-        error('Disturbance matrix is specified, but not disturbance set.')
+        error('Disturbance matrix E is specified, but not disturbance set.')
     elseif (exist('Gw','var') && ~exist('Fw','var'))
-        error('Matrix Gw given, but not vector Fw.')
+        error('Disturbance set incomplete: Matrix Gw given, but not vector Fw.')
     elseif (~exist('Gw','var') && exist('Fu','var'))
-        error('Vector Fw given, but not matrix Gw.')
+        error('Disturbance set incomplete: Vector Fw given, but not matrix Gw.')
     elseif (~isempty(Gw) && ~isempty(Fw))
         if (size(Gw,1)~=size(Fw,1))
             error('Rows of Gw and Fw do not match.')
@@ -78,35 +75,8 @@ else
         else
             W = Polyhedron('H',[Gw Fw]);
             if (~W.isBounded)
-                error('Disturbance is unbounded.')
+                error('Disturbance set is unbounded.')
             end
         end
     end
-end
-
-% If no method selected, use the default:
-if (~exist('method','var'))
-    method = 'default'; 
-end
-
-% Method compatibility with disturbance case:
-if(disturbance)
-    if ( (strcmp(method,'CDC19')) || (strcmp(method,'HSCC20')) || (strcmp(method,'ACC21a')) )
-        error('The selected method has not been implemented for the case of disturbances. Please select ACC21b.')
-    end
-end
-
-% Loop selection:
-if (~(exist('L','var') && (L>0) && (floor(L)==L) ) )
-    disp('Length of the loop (L) must be a positive integer.')
-    prompt = 'Choose a value for length of loop (L>0):';
-    L = input(prompt);
-    while ((L<0) || (L==0) || (floor(L)~=L))
-        prompt = 'Input L must be a positive integer:';
-        L = input(prompt);
-    end
-end
-
-if (strcmp(method,'CDC19'))
-    L = 1;
 end

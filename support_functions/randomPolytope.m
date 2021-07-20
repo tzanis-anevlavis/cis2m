@@ -1,6 +1,6 @@
-function [isInv] = isInvariant(X,U,A,B)
-%% Authors: Tzanis Anevlavis.
-% Copyright (C) 2021, Tzanis Anevlavis.
+function P = randomPolytope(n,k)
+%% Authors: Tzanis Anevlavis
+% Copyright (C) 2020, Tzanis Anevlavis
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -16,35 +16,20 @@ function [isInv] = isInvariant(X,U,A,B)
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the Controlled Invariance in 2 Moves repository 
+% This code is part of the Controlled Invariance in 2 Moves repository
 % (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
-% For any comments contact Tzanis Anevlavis @ t.anevlavis@ucla.edu.
+% For any comments contact Tzanis Anevlavis @ janis10@ucla.edu.
 %
 %
 %
 %
 %% Description:
-% Check if a polyhedron X is invariant with respect to a linear system:
-% x^+ = A x + B u, with u \in U. 
+% Computes a random polytope of dimension n with k constraints. 
 
-n = size(A,2);
-% Pure state constraints:
-Gx = X.A;
-Fx = X.b;
-% Pure input constraints:
-if (~isempty(U))
-    Gu = [zeros(size(U.A,1),n) U.A];
-    Fu = U.b;
-else
-    Gu = [];
-    Fu = [];
+P = Polyhedron('H',[1 1]); % Initialize: one dimensional halfspace.
+
+while (~P.isBounded || P.isEmptySet) % repeat until P = non-empty and bounded.
+   F = ones(k,1); G = rand(k,n)-0.5;
+   P = Polyhedron('H', [G F]);
 end
-% Concatenate constraints:
-matW =  [Gx*A   Gx*B    Fx; 
-         Gu             Fu];
-% Compute Pre:
-W = Polyhedron('H', matW);
-Pre = W.projection(1:n,'ifourier');
-
-isInv = (X <= Pre);

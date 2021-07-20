@@ -30,7 +30,7 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
+% Conference, Zï¿½rich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/mpt.
 %
 % This script makes use of the PCIS toolbox:
@@ -39,15 +39,17 @@
 close all
 clear
 clc
+% Relative to this file:
+addpath('../../../legacy_code/');
 
 %% Model parameters:
 % Original system:
 [param,Safe] = constant_lk4();
-[A,B,D,U,P] = get_lk_dyn(param);
+[A,B,E,U,P] = get_lk_dyn(param);
 
 % State constraints:
-G = Safe.A;
-F = Safe.b;
+Gx = Safe.A;
+Fx = Safe.b;
 
 % Input constraints:
 Gu = U.A;
@@ -90,7 +92,7 @@ for mm = 1:numMethods
         disp(L);
         
         t2  = tic;
-        cisMat = computeCIS(A,B,G,F,Gu,Fu,method,L);
+        cisMat = computeCIS(A,B,Gx,Fx,Gu,Fu,[],[],[],method,L);
         Times{mm}(l) = toc(t2);
         %disp(Times{mm}(l));
         cis{mm}(l) = Polyhedron('H', cisMat);

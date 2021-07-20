@@ -31,12 +31,14 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
+% Conference, Zï¿½rich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/mpt.
 
 close all
 clc
 clear
+% Relative to this file:
+addpath('../../../legacy_code/');
 
 %% Model parameters
 kd = 4600;  % stiffness
@@ -74,7 +76,7 @@ Fo = [d*ones(N,1); d*ones(N,1); vMax*ones(N+1,1); vMin*ones(N+1,1)];
 D = Polyhedron('H',[Go Fo]);
 
 % Final matrices:
-A = Ao; B = Bo; G = Go; F = Fo;
+A = Ao; B = Bo; Gx = Go; Fx = Fo;
 
 %% Controlled Invariant Set in Two Moves - Hierarchy
 % Start parallel pool if it is not running already:
@@ -104,7 +106,7 @@ for mm = 1:numMethods  % for each method
         disp(L);
 
         t = tic;
-        cisMat = computeCIS(A,B,G,F,[],[],method,L);
+        cisMat = computeCIS(A,B,Gx,Fx,[],[],[],[],[],method,L);
         Times{mm}(l) = toc(t);
         disp(Times{mm}(l));
         cis{mm}(l) = Polyhedron('H', cisMat);

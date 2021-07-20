@@ -45,25 +45,27 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
+% Conference, Zï¿½rich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
 close all
 clear
 clc
+% Relative to this file:
+addpath('../../../legacy_code/');
 
 % Original system:
 A = [1.5 1; 0 1]; B = [0.5; 0.25];
 % State constraints:
-G = [   0.9147   -0.5402;
+Gx = [   0.9147   -0.5402;
     0.2005    0.6213;
     -0.8193    0.9769;
     -0.4895   -0.8200;
     0.7171   -0.3581;
     0.8221    0.0228;
     0.3993   -0.8788];
-F = [   0.5566;
+Fx = [   0.5566;
     0.8300;
     0.7890;
     0.3178;
@@ -102,7 +104,7 @@ for L = 1:Lmax
     
     method = 'HSCC20';
     tic
-    cisMat = computeCIS(A,B,G,F,Gu,Fu,method,L);
+    cisMat = computeCIS(A,B,Gx,Fx,Gu,Fu,[],[],[],method,L);
     Times(L) = toc;
     cis(L) = Polyhedron('H', cisMat);
     

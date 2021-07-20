@@ -36,17 +36,22 @@ function [mcisA,mcisb] = legacyCIS(Ac,Bc,Gc,Fc,G_k,F_k,L,method,verbose)
 % HSCC20:
 % T.Anevlavis, and P.Tabuada. 2020. A simple hierarchy for computing 
 % controlled invariant sets. In Proceedings of the 23rd ACM International 
-% Conference on Hybrid Systems: Computation and Control (HSCC ?20). 
+% Conference on Hybrid Systems: Computation and Control (HSCC' 20). 
 % DOI: 10.1145/3365365.3382205. 
+%
+% ACC21:
+% T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada. 2021. An enhanced hierarchy for 
+% (robust) controlled invariance. 2021 American Control Conference (ACC), 
+% 2021. 
 %
 %
 
-% The below methods have been implemented only for single input.
+% The below methods have been implemented only for single input systems.
 if (size(Bc,2)>1)
     error('The legacy methods have been implemented only for the single input case.');
 end
 
-addpath('./algorithms/legacy/');
+addpath('./algorithms/');
 
 if (strcmp(method,'CDC19'))
     [mcisA,mcisb] = cdc19(Ac,Bc,Gc,Fc,verbose);
@@ -60,4 +65,4 @@ else
     error('Invalid method.');
 end
 
-removepath('./algorithms/legacy/');
+removepath('./algorithms/');

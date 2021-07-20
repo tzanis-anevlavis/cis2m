@@ -44,11 +44,13 @@
 close all
 clear
 clc
+% Relative to this file:
+addpath('../../legacy_code/');
 
 % Original system and polyhedron:
 A = [0 1 -2; 3 -4 5; -6 7 8]; B = [-1; 2; 4];
 
-G = [-0.9497    0.3212   -0.8258;
+Gx = [-0.9497    0.3212   -0.8258;
      -0.1578   -0.2323    0.6042;
      -0.6318    0.2547    0.9783;
 	  0.4516   -0.9567   -0.8661;
@@ -69,7 +71,7 @@ G = [-0.9497    0.3212   -0.8258;
       0.4463   -0.9400    0.8793;
      -0.3051    0.0713   -0.2911];
 
-F = [  0.4106;
+Fx = [  0.4106;
         0.9843;
         0.9456;
         0.6766;
@@ -94,7 +96,7 @@ D = Polyhedron('H',[G F]);
 
 %% Compute controlled invariant set in two moves:
 method = 'CDC19';
-cisMat = computeCIS(A,B,G,F,[],[],method);
+cisMat = computeCIS(A,B,Gx,Fx,[],[],[]],[],[],method);
 cis = Polyhedron('H',cisMat);
 
 %% Compute MCIS using MPT3:

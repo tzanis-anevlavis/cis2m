@@ -30,7 +30,7 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
+% Conference, Zï¿½rich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/mpt.
 %
 % This script makes use of the PCIS toolbox:
@@ -39,13 +39,15 @@
 close all
 clear
 clc
+% Relative to this file:
+addpath('../../../legacy_code/');
 
 %% Generate system dynamics
 [param,Safe] = constant_lk4();  % Choose disturbance range within. 
-[A,B,D,U,P,dyn] = get_lk_dyn(param);
+[A,B,E,U,P,dyn] = get_lk_dyn(param);
 
-G = Safe.A;
-F = Safe.b;
+Gx = Safe.A;
+Fx = Safe.b;
 Gu = U.A;
 Fu = U.b;
 Gw = P.A;
@@ -83,7 +85,7 @@ for l=1:Lmax
     disp(L)
     
     t = tic;
-    cisMat =computeCIS2(A,B,G,F,Gu,Fu,method,L,D,Gw,Fw,0);
+    cisMat = computeCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,method,L);
     Times(l) = toc(t);
     
     cis(l) = Polyhedron('H',cisMat);
@@ -95,22 +97,3 @@ disp(Times)
 VolumePercentage = Volumes{mm}./volumeMCIS*100;
 
 disp(VolumePercentage)
-
-%% MPT3
-% c2 = tic;
-% system = LTISystem('A',A,'B',B);
-% mcis = system.invariantSet('X',Safe,'U',U);
-% volumeMCIS = mcis.volume
-% t2 = toc(c2)
-%% Visualization
-%
-% figure(1);
-% plot(mcis.slice(4,0),'alpha',0.5); hold on;
-% % figure(2);
-% plot(C.slice(4,0),'color','green')
-
-% figure(1);
-% plot(mcis.projection([1,2,3]),'alpha',0.5)
-% % figure(2);
-% hold on;
-% plot(C.projection([1,2,3]),'color','green')

@@ -40,13 +40,15 @@
 % This script makes use of the Multi-Parametric Toolbox 3.0:
 % M. Herceg, M. Kvasnica, C. Jones, and M. Morari,
 % ``Multi-Parametric Toolbox 3.0,'' in Proc. of the European Control
-% Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
+% Conference, Zï¿½rich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/ mpt.
 
 %% Exammple Setup:
 close all
-% clc
+clc
 clear
+% Relative to this file:
+addpath('../../../legacy_code/');
 
 % Loop length:
 L = 2;
@@ -92,7 +94,7 @@ for N = 1:4      % number of trailers
     D = Polyhedron('H',[Go Fo]);
     
     % Final matrices:
-    A = Ao; B = Bo; G = Go; F = Fo;
+    A = Ao; B = Bo; Gx = Go; Fx = Fo;
     
     %%%%%%%%%%% Controlled Invariant Set in Two Moves - Hierarchy %%%%%%%%%%%
     % Start parallel pool if it is not running already:
@@ -103,7 +105,7 @@ for N = 1:4      % number of trailers
     method = 'HSCC20';
     
     tic
-    cisMat = computeCIS(A,B,G,F,[],[],method,L);
+    cisMat = computeCIS(A,B,Gx,Fx,Gu,Fu,[],[],[],method,L);
     Times(N) = toc;
 	cis(N) = Polyhedron('H', cisMat);
     
