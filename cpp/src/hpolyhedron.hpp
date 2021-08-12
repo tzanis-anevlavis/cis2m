@@ -3,12 +3,14 @@
 #include <Eigen/Dense>
 
 namespace cis2m {
+
 	class HPolyhedron {
 		public:
-			HPolyhedron();
+			/**
+			 * Constructors
+			 */
 			HPolyhedron(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b);
 			~HPolyhedron();
-
 
 			Eigen::VectorXd ComputeSupport(const Eigen::MatrixXd& A_other) const;
 
@@ -18,9 +20,8 @@ namespace cis2m {
 			HPolyhedron& operator+=(const HPolyhedron& P);
 			HPolyhedron& operator-=(const HPolyhedron& P);
 
-			HPolyhedron& operator+(const HPolyhedron& P);
-			HPolyhedron& operator-(const HPolyhedron& P);
 
+			// Getters
 			Eigen::MatrixXd Ai() const;
 			Eigen::VectorXd bi() const; 
 			Eigen::MatrixXd Ae() const;
@@ -39,4 +40,7 @@ namespace cis2m {
 			int SpaceDim_;
 			int NumIneqs_;
 	};
+
+	HPolyhedron operator+(HPolyhedron Pl, HPolyhedron Pr);
+	HPolyhedron operator-(HPolyhedron Pl, HPolyhedron Pr);
 }

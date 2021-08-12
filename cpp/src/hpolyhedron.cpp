@@ -12,8 +12,6 @@ using Eigen::MatrixXd;
 namespace cis2m {
 
 	// CLASS ===================================================================
-	HPolyhedron::HPolyhedron() {}
-
 	HPolyhedron::~HPolyhedron() {}
 
 	HPolyhedron::HPolyhedron(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b) : Ai_(A), bi_(b) {
@@ -111,16 +109,6 @@ namespace cis2m {
 	}
 
 
-	HPolyhedron& HPolyhedron::operator-(const HPolyhedron& rhs) {
-		return *this-=rhs;
-	}
-
-
-	HPolyhedron& HPolyhedron::operator+(const HPolyhedron& rhs) {
-		return *this+=rhs;
-	}
-
-
 	// Getters
 	Eigen::MatrixXd HPolyhedron::Ai() const {
 		return Ai_;
@@ -136,5 +124,15 @@ namespace cis2m {
 
 	Eigen::VectorXd HPolyhedron::be() const {
 		return be_;
+	}
+
+
+
+	HPolyhedron operator+(HPolyhedron Pl, HPolyhedron Pr) {
+		return Pl += Pr;
+	}
+
+	HPolyhedron operator-(HPolyhedron Pl, HPolyhedron Pr) {
+		return Pl -= Pr;
 	}
 }
