@@ -29,13 +29,19 @@ target_compile_definitions(cis2m PUBLIC CIS2M_DEBUG)
 
 
 # Tests
-add_executable(cpp_test ${test_folder}/test_hpolyhedron.cc)
-target_link_libraries(cpp_test cis2m)
+add_executable(hpoly_test ${test_folder}/test_hpolyhedron.cc)
+target_link_libraries(hpoly_test cis2m)
+
+# Tests
+add_executable(cis_test ${test_folder}/test_cisgenerator.cc)
+target_link_libraries(cis_test cis2m)
+
+
 
 enable_testing()
 
 add_test(
-	NAME cpp_test
-	COMMAND $<TARGET_FILE:cpp_test>
+	NAME hpoly_test
+	COMMAND $<TARGET_FILE:hpoly_test>
 	)
 
