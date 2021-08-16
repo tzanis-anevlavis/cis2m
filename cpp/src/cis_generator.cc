@@ -68,25 +68,28 @@ namespace cis2m {
 
 		std::vector<HPolyhedron> SafeSet_seq;
 				
+		MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
+		std::cout << std::endl << Transform << std::endl;
+		SafeSet_seq.push_back(SafeSet_BF);
 		if (Ed_.size() > 0) {
 			MatrixXd DynMat = MatrixXd::Identity(StateDim_, StateDim_);
-			for (int i = 0; i < nmax; i++) {
-				SafeSet_seq.push_back(SafeSet_BF - DisturbanceSet_.affineT(DynMat * Ed_));
+			for (int i = 1; i < nmax; i++) {
+				HPolyhedron Sub(DisturbanceSet_.affineT(DynMat * Transform * Ed_));	
+				SafeSet_seq.push_back(SafeSet_BF - Sub);
 				DynMat *= Ad_BF;
 			}
-		} else {
-			SafeSet_seq.push_back(SafeSet_BF);
 		}
 
 #ifdef CIS2M_DEBUG
 		std::cout << __FILE__ << std::endl;
-		std::cout << "Computation of Safeset sequence" << std::endl;
-		std::cout << "SafeSet Base A: " << std::endl << SafeSet_BF.Ai() << std::endl;
-		std::cout << "SafeSet Base B: " << std::endl << SafeSet_BF.bi() << std::endl;
-		std::cout << std::endl;
+		std::cout << "Computation of Safe set sequence" << std::endl;
+		int i = 0;
+		for (auto& el : SafeSet_seq) {
+			std::cout << "SafeSet ["<< i <<"] Base A: " << std::endl << el.Ai() << std::endl;
+			std::cout << "SafeSet ["<< i++ <<"]Base B: " << std::endl << el.bi() << std::endl;
+			std::cout << std::endl;
+		}
 #endif
-
-
 		return SafeSet_seq;
 		
 	}
@@ -118,6 +121,7 @@ namespace cis2m {
 		Ahd.block(StateDim_, StateDim_, P.rows(), P.cols()) = P;
 		
 #ifdef CIS2M_DEBUG
+		/*
 		std::cout << __FILE__ << std::endl;
 		std::cout << "Computation of Lifted System" << std::endl;
 		std::cout << "A_BF: " << std::endl << Ad_BF << std::endl;
@@ -125,13 +129,14 @@ namespace cis2m {
 		std::cout << "A_lifted: " << std::endl << Ahd << std::endl;
 		std::cout << "A_lifted Size: " << Ahd.rows() << " x " << Ahd.cols() << std::endl;
 		std::cout << std::endl;
+		*/
 #endif
 
 		A_lifted_ = Ahd;
 	}
 
 
-	HPolyhedron CISGenerator::computeCIS(const HPolyhedron& SafeSet, int L, int T) {
+	void CISGenerator::computeCIS(const HPolyhedron& SafeSet, int L, int T) {
 		if (Level_ != L || Transient_ != T)
 			ComputeLiftedSystem(L, T);
 
@@ -152,7 +157,7 @@ namespace cis2m {
 		std::vector<HPolyhedron> seq = ComputeShrinkedSafeSetsSequence(SafeSet);
 
 		MatrixXd Acurr = A_lifted_; 
-		for (int t = 0; t < mu_max + (length - 1); t++) {
+		for (int t = 1; t < mu_max + (length - 1); t++) {
 			int tbar = t < seq.size() ? t : seq.size() - 1;
 			MatrixXd TempA(MatrixXd::Zero(NDynconstr, NumberInputs_ * length + StateDim_));
 			TempA.block(0, 0, NDynconstr, StateDim_) = seq[tbar].Ai();
@@ -165,24 +170,61 @@ namespace cis2m {
 		// Get the transformation
 		MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
 
+#ifdef CIS2M_DEBUG
+		/*
+		std::cout << __FILE__ << std::endl;
+		std::cout << "Computation of CIS" << std::endl;
 		std::cout << "Transf: " << std::endl << Transform << std::endl;
-
-		mcisA.block(0, 0, mcisA.rows(), StateDim_) = mcisA.block(0, 0, mcisA.rows(), StateDim_) * 
-			Transform;
-
+		std::cout << "CIS_A_BF: " << std::endl << mcisA << std::endl;
+		std::cout << "CIS_b_BF: " << std::endl << mcisb << std::endl;
+		std::cout << "CIS Size: " << mcisA.rows() << " x " << mcisA.cols() << std::endl;
+		std::cout << std::endl;
+		*/
+#endif
+		mcisA.block(0, 0, mcisA.rows(), StateDim_) = mcisA.block(0, 0, mcisA.rows(), StateDim_) * Transform;
+#ifdef CIS2M_DEBUG
+		//std::cout << "CIS_A_: " << std::endl << mcisA << std::endl;
+#endif	
 		// Note: The CIS is expressed in the original basis
 		CIS_ =  HPolyhedron(mcisA, mcisb);
 		cis_computed_ = true;
-		return CIS_;
 	}
 
-	std::optional<HPolyhedron> CISGenerator::FetchCIS() {
+
+	HPolyhedron CISGenerator::Fetch_CIS() {
 		if (cis_computed_) {
 			return CIS_;
-		}
-		else{
+		} else {
 			return {};	
 		}
 	}
 
+
+	MatrixXd CISGenerator::Fetch_A_State() {
+		if (cis_computed_) {
+			return CIS_.Ai().leftCols(StateDim_);
+		} else {
+			return {};	
+		}
+	}
+
+
+	MatrixXd CISGenerator::Fetch_A_Input() {
+		if (cis_computed_) {
+			int NumRows = CIS_.Ai().rows();
+			return CIS_.Ai().block(0, StateDim_, NumRows, NumberInputs_);
+		} else {
+			return {};	
+		}
+	}
+
+
+	MatrixXd CISGenerator::Fetch_A_Virtual() {
+		if (cis_computed_) {
+			int NumCols = CIS_.Ai().cols();
+			return CIS_.Ai().rightCols(NumCols -  (NumberInputs_ + StateDim_));
+		} else {
+			return {};	
+		}
+	}
 }

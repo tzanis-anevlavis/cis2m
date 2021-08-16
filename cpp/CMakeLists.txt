@@ -29,19 +29,54 @@ target_compile_definitions(cis2m PUBLIC CIS2M_DEBUG)
 
 
 # Tests
-add_executable(hpoly_test ${test_folder}/test_hpolyhedron.cc)
-target_link_libraries(hpoly_test cis2m)
+add_executable(hpoly_affine_test_0 ${test_folder}/test_hpolyhedron_affineT0.cc)
+target_link_libraries(hpoly_affine_test_0 cis2m)
 
-# Tests
-add_executable(cis_test ${test_folder}/test_cisgenerator.cc)
-target_link_libraries(cis_test cis2m)
+add_executable(hpoly_affine_test_1 ${test_folder}/test_hpolyhedron_affineT1.cc)
+target_link_libraries(hpoly_affine_test_1 cis2m)
 
+add_executable(hpoly_minkowski_test_0 ${test_folder}/test_hpolyhedron_mink0.cc)
+target_link_libraries(hpoly_minkowski_test_0 cis2m)
+
+add_executable(hpoly_minkowski_test_1 ${test_folder}/test_hpolyhedron_mink1.cc)
+target_link_libraries(hpoly_minkowski_test_1 cis2m)
+
+add_executable(hpoly_minkowski_test_2 ${test_folder}/test_hpolyhedron_mink2.cc)
+target_link_libraries(hpoly_minkowski_test_2 cis2m)
+
+add_executable(hpoly_minkowski_test_3 ${test_folder}/test_hpolyhedron_mink3.cc)
+target_link_libraries(hpoly_minkowski_test_3 cis2m)
+
+add_executable(cis_test_0 ${test_folder}/test_cisgenerator0.cc)
+target_link_libraries(cis_test_0 cis2m)
+
+add_executable(cis_test_1 ${test_folder}/test_cisgenerator1.cc)
+target_link_libraries(cis_test_1 cis2m)
 
 
 enable_testing()
 
 add_test(
-	NAME hpoly_test
-	COMMAND $<TARGET_FILE:hpoly_test>
+	NAME hpoly_affine_test_0
+	COMMAND $<TARGET_FILE:hpoly_affine_test_0>
 	)
-
+add_test(
+	NAME hpoly_affine_test_1
+	COMMAND $<TARGET_FILE:hpoly_affine_test_1>
+	)
+add_test(
+	NAME hpoly_minkowski_test_0
+	COMMAND $<TARGET_FILE:hpoly_minkowski_test_0>
+	)
+add_test(
+	NAME hpoly_minkowski_test_1
+	COMMAND $<TARGET_FILE:hpoly_minkowski_test_1>
+	)
+add_test(
+	NAME hpoly_minkowski_test_2
+	COMMAND $<TARGET_FILE:hpoly_minkowski_test_2>
+	)
+add_test(
+	NAME hpoly_minkowski_test_3
+	COMMAND $<TARGET_FILE:hpoly_minkowski_test_3>
+	)

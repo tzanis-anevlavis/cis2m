@@ -35,17 +35,23 @@ namespace cis2m {
 
 	// Support
 	VectorXd HPolyhedron::ComputeSupport(const MatrixXd& A_other) const {
+
+		std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+		const double infinity = solver->infinity();
+
 		// Number of hyperplanes
 		int NHyperPlanes = A_other.rows(); 
 
 		VectorXd supp(NHyperPlanes);
 
-		std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
-		if (!solver) {
-			std::cerr << "SCIP Solver not available" << std::endl;
-			return supp;
+		for (int i = 0; i < NHyperPlanes; i++) {
+			supp(i) = infinity;
 		}
-		const double infinity = solver->infinity();
+
+#ifdef CIS2M_DEBUG
+		std::cout << "S: " << std::endl << Ai_ << std::endl;
+		std::cout << "Hyperplanes: " << std::endl << A_other << std::endl;
+#endif
 
 		for (int hp = 0; hp < NHyperPlanes; hp++) {
 			solver->Clear();
@@ -54,33 +60,56 @@ namespace cis2m {
 			int NumVars = SpaceDim_;
 			std::vector<MPVariable*> x(NumVars);
 			for (int i = 0; i < NumVars; i++) {
-				x[i] = solver->MakeNumVar(-infinity, infinity, "");
+				x[i] = solver->MakeNumVar(-100, 100, "");
 			}
 
 			// Create the inequalities constraints
+			std::cout << "Setting Constraint coefficients..." << std::endl;
 			for (int i = 0; i < NumIneqs_; i++) {
 				MPConstraint* con = solver->MakeRowConstraint(-infinity, bi_(i), "");
+				std::cout << "[" << i << "]:";
 				for (int j = 0; j < NumVars; j++) {
 					con->SetCoefficient(x[j],  Ai_(i, j));
+					std::cout << Ai_(i, j) << " ";
 				}
+				std::cout << std::endl;
 			}
 
 			// Define the objective
 			MPObjective* const obj = solver->MutableObjective();
-			obj->SetMaximization();
-
 			VectorXd cost_coeff = VectorXd(A_other.row(hp));
+			std::cout << "Cost:" << std::endl;
 			for (int j = 0; j < NumVars; j++) {
 				obj->SetCoefficient(x[j], cost_coeff(j));
+				std::cout << cost_coeff(j) << " ";
 			}
+			std::cout << std::endl;
+			obj->SetMaximization();
 
 			const MPSolver::ResultStatus result_status = solver->Solve();
 
-			if (result_status != MPSolver::OPTIMAL) {
-				std::cerr << "Did not get the optimal solution!" << std::endl;
+
+			if (result_status != MPSolver::OPTIMAL && result_status != MPSolver::UNBOUNDED) {
+				std::cerr << "ERROR!" << std::endl;
 				std::cerr << "Return Result: " << result_status << std::endl;
+				std::cerr << "Hyperplane: " << std::endl << cost_coeff.transpose() << std::endl;
+				std::cerr << "Polyhedron: " << std::endl << Ai_ << std::endl;
+				std::cerr << std::endl;
+			} else {
+				if (result_status == MPSolver::UNBOUNDED) {
+					supp(hp) = 0;
+					std::cout << "Always Good!" << std::endl;
+				} else {
+					supp(hp) = obj->Value();
+					std::cout << "Optimal Value = " << supp(hp) << std::endl;
+					std::cout << "x: ";
+					for (auto xi : x) {
+						std::cout << xi->solution_value() << " ";
+					}
+					std::cout << std::endl;
+				}
 			}
-			supp(hp) = obj->Value();
+			std::cout << std::endl;
 		}
 		return supp;
 	}
@@ -204,6 +233,7 @@ namespace cis2m {
 		HPolyhedron P_final(Ai_final, bi_final, Ae_final, be_final);
 
 #ifdef CIS2M_DEBUG 
+		/*
 		std::cout << __FILE__ << std::endl;
 		std::cout << "LU Decomposition" << std::endl;
 		std::cout << "Original: " << std::endl << T << std::endl;
@@ -219,6 +249,7 @@ namespace cis2m {
 		std::cout << "A_final: " << std::endl << Ai_final << std::endl;
 		std::cout << "Reconstruction: " << std::endl << P.inverse() * l * u * Q.inverse() << std::endl;
 		std::cout << std::endl;
+		*/
 #endif
 
 		return P_final;
@@ -241,6 +272,11 @@ namespace cis2m {
 		// max <a_i, x>
 		// subj. to x \in rhs
 		// where a_i is the vector representing a hyperplane of *this polyhedron.
+		if (SpaceDim_ != rhs.SpaceDim_){
+			std::cerr << "The polyhedrons should have the same dimension" << std::endl;
+			return *this;
+		}
+
 		VectorXd supp = rhs.ComputeSupport(Ai_);
 		bi_ = bi_ + supp;
 
@@ -253,6 +289,11 @@ namespace cis2m {
 		// max <a_i, x>
 		// subj. to x \in rhs
 		// where a_i is the vector representing a hyperplane of *this polyhedron.
+		if (SpaceDim_ != rhs.SpaceDim_){
+			std::cerr << "The polyhedrons should have the same dimension" << std::endl;
+			return *this;
+		}
+
 		VectorXd supp = rhs.ComputeSupport(Ai_);
 		bi_ = bi_ - supp;
 

@@ -66,7 +66,43 @@ class CISGenerator {
 		 * \return	Control Invariant Set as a HPolyhedron
 		 *
 		 */
-		HPolyhedron computeCIS(const HPolyhedron& SafeSet, int L, int T);
+		void computeCIS(const HPolyhedron& SafeSet, int L, int T);
+
+
+		/**
+		 * \brief Fetch the state part of the Constraint Coefficients
+		 *
+		 * \return	Control Invariant Set as a HPolyhedron
+		 *
+		 */
+		HPolyhedron Fetch_CIS();
+
+
+		/**
+		 * \brief Fetch the state part of the Constraint Coefficients
+		 *
+		 * \return	MatrixXd 
+		 *
+		 */
+		MatrixXd Fetch_A_State();
+
+
+		/**
+		 * \brief Fetch the input part of the Constraint Coefficients
+		 *
+		 * \return	MatrixXd 
+		 *
+		 */
+		MatrixXd Fetch_A_Input();
+
+	
+		/**
+		 * \brief Fetch the virtual input part of the Constraint Coefficients
+		 *
+		 * \return	MatrixXd 
+		 *
+		 */
+		MatrixXd Fetch_A_Virtual();
 
 	private:
 
@@ -93,7 +129,6 @@ class CISGenerator {
 		BrunovskyForm* brunovsky_form_;
 
 
-		std::optional<HPolyhedron> FetchCIS();
 
 		void ComputeLiftedSystem(int L, int T);
 	
