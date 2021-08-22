@@ -1,5 +1,6 @@
 #include "hpolyhedron.hpp"
 #include <ortools/linear_solver/linear_solver.h>
+#include <iostream>
 
 using operations_research::MPSolver;
 using operations_research::MPConstraint;
@@ -15,6 +16,7 @@ namespace cis2m {
 	HPolyhedron::HPolyhedron() {
 		SpaceDim_ = 0;
 		NumIneqs_ = 0;
+		valid_ = false;
 	}
 
 	HPolyhedron::~HPolyhedron() {}
@@ -22,6 +24,7 @@ namespace cis2m {
 	HPolyhedron::HPolyhedron(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b) : Ai_(A), bi_(b) {
 		SpaceDim_ = Ai_.cols();
 		NumIneqs_ = Ai_.rows();
+		valid_ = true;
 	}
 
 	HPolyhedron::HPolyhedron(
@@ -31,6 +34,25 @@ namespace cis2m {
 			const Eigen::MatrixXd& be) : Ai_(Ai), bi_(bi), Ae_(Ae), be_(be)  {
 		SpaceDim_ = Ai_.cols();
 		NumIneqs_ = Ai_.rows();
+		valid_ = true;
+	}
+
+	bool HPolyhedron::Contains(const Eigen::VectorXd& point) const {
+		bool output = false;
+
+		if (!valid_) {
+			std::cerr << "Calling a method on a empty HPolyhedron!" << std::endl;
+			return output;
+		}
+
+		VectorXd ineq = Ai_ * point - bi_;
+		for (int i = 0; i < ineq.size(); i++) {
+			if (ineq(i) > 0) {
+				output = false;
+				break;
+			}
+		}
+		return output; 
 	}
 
 	// Support
@@ -46,6 +68,11 @@ namespace cis2m {
 
 		for (int i = 0; i < NHyperPlanes; i++) {
 			supp(i) = infinity;
+		}
+
+		if (!valid_) {
+			std::cerr << "Calling a method on a empty HPolyhedron!" << std::endl;
+			return supp;
 		}
 
 #ifdef CIS2M_DEBUG
@@ -316,6 +343,10 @@ namespace cis2m {
 
 	Eigen::VectorXd HPolyhedron::be() const {
 		return be_;
+	}
+
+	bool HPolyhedron::isValid() const {
+		return valid_;
 	}
 
 

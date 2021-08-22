@@ -1,6 +1,7 @@
 #include "hpolyhedron.hpp"
 #include <Eigen/Dense>
 #include <iostream>
+#include <vector>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

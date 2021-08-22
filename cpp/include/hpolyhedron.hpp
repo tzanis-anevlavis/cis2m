@@ -17,6 +17,8 @@ namespace cis2m {
 					const Eigen::MatrixXd& be);
 			~HPolyhedron();
 
+			bool Contains(const Eigen::VectorXd& point) const;
+
 			Eigen::VectorXd ComputeSupport(const Eigen::MatrixXd& A_other) const;
 
 			HPolyhedron Projection(int el_index, double tol=1e-6);
@@ -39,7 +41,11 @@ namespace cis2m {
 			int GetNumInequalities();
 			int GetSpaceDim();
 
+			bool isValid() const;
+
 		private:
+			bool valid_;
+
 			Eigen::MatrixXd Ai_;
 			Eigen::VectorXd bi_;
 
