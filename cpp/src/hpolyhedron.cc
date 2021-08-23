@@ -21,7 +21,7 @@ namespace cis2m {
 
 	HPolyhedron::~HPolyhedron() {}
 
-	HPolyhedron::HPolyhedron(const Eigen::MatrixXd& A, const Eigen::MatrixXd& b) : Ai_(A), bi_(b) {
+	HPolyhedron::HPolyhedron(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) : Ai_(A), bi_(b) {
 		SpaceDim_ = Ai_.cols();
 		NumIneqs_ = Ai_.rows();
 		valid_ = true;
@@ -29,25 +29,27 @@ namespace cis2m {
 
 	HPolyhedron::HPolyhedron(
 			const Eigen::MatrixXd& Ai,
-			const Eigen::MatrixXd& bi,
+			const Eigen::VectorXd& bi,
 			const Eigen::MatrixXd& Ae,
-			const Eigen::MatrixXd& be) : Ai_(Ai), bi_(bi), Ae_(Ae), be_(be)  {
+			const Eigen::VectorXd& be) : Ai_(Ai), bi_(bi), Ae_(Ae), be_(be)  {
 		SpaceDim_ = Ai_.cols();
 		NumIneqs_ = Ai_.rows();
 		valid_ = true;
 	}
 
 	bool HPolyhedron::Contains(const Eigen::VectorXd& point) const {
-		bool output = false;
+		bool output = true;
 
 		if (!valid_) {
 			std::cerr << "Calling a method on a empty HPolyhedron!" << std::endl;
+			output = false;
 			return output;
 		}
 
 		if (point.rows() != Ai_.cols()) {
 			std::cerr << "The vector dimensions is not compatbile!" << std::endl;
 			std::cerr << "Expected: " << Ai_.cols() << " | " << "Provided: " << point.rows() << std::endl;
+			output = false;
 			return output;
 		}
 
@@ -61,7 +63,6 @@ namespace cis2m {
 				break;
 			}
 		}
-		output = true;
 		return output; 
 	}
 
