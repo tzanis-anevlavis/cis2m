@@ -45,13 +45,23 @@ namespace cis2m {
 			return output;
 		}
 
+		if (point.rows() != Ai_.cols()) {
+			std::cerr << "The vector dimensions is not compatbile!" << std::endl;
+			std::cerr << "Expected: " << Ai_.cols() << " | " << "Provided: " << point.rows() << std::endl;
+			return output;
+		}
+
 		VectorXd ineq = Ai_ * point - bi_;
 		for (int i = 0; i < ineq.size(); i++) {
 			if (ineq(i) > 0) {
+				std::cout << "A: " << Ai_.row(i) << std::endl;
+				std::cout << "x: " << point.transpose() << std::endl;
+				std::cout << "b: " << bi_(i) << std::endl << std::endl;
 				output = false;
 				break;
 			}
 		}
+		output = true;
 		return output; 
 	}
 
@@ -289,6 +299,8 @@ namespace cis2m {
 
 		Ae_ = other.Ae();
 		be_ = other.be();
+
+		valid_ = other.valid_;
 
 		return *this;
 	}
