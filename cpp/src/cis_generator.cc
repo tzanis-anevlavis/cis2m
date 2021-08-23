@@ -85,8 +85,8 @@ namespace cis2m {
 		std::cout << "Computation of Safe set sequence" << std::endl;
 		int i = 0;
 		for (auto& el : SafeSet_seq) {
-			std::cout << "SafeSet ["<< i <<"] Base A: " << std::endl << el.Ai() << std::endl;
-			std::cout << "SafeSet ["<< i++ <<"]Base B: " << std::endl << el.bi() << std::endl;
+			std::cout << "SafeSet [" << i << "] Base A: " << std::endl << el.Ai() << std::endl;
+			std::cout << "SafeSet [" << i++ << "]Base B: " << std::endl << el.bi() << std::endl;
 			std::cout << std::endl;
 		}
 #endif
