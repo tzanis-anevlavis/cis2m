@@ -1,8 +1,8 @@
+#pragma once
+
 #include <Eigen/Dense>
 #include "brunovskyform.hpp"
 #include "hpolyhedron.hpp"
-
-using Eigen::MatrixXd;
 
 namespace cis2m {
 class CISGenerator {
@@ -15,7 +15,7 @@ class CISGenerator {
 		 * \param[in]	Bd	Input matrix of the system		
 		 *
 		 */
-		CISGenerator(const MatrixXd& Ad,const MatrixXd& Bd);
+		CISGenerator(const Eigen::MatrixXd& Ad,const Eigen::MatrixXd& Bd);
 
 
 		/**
@@ -27,7 +27,7 @@ class CISGenerator {
 		 * \param[in]	Ed	Disturbance matrix
 		 *
 		 */
-		CISGenerator(const MatrixXd& Ad,const MatrixXd& Bd, const MatrixXd& Ed);
+		CISGenerator(const Eigen::MatrixXd& Ad,const Eigen::MatrixXd& Bd, const Eigen::MatrixXd& Ed);
 
 
 		/// Destructor
@@ -81,60 +81,70 @@ class CISGenerator {
 		/**
 		 * \brief Fetch the state part of the Constraint Coefficients
 		 *
-		 * \return	MatrixXd 
+		 * \return	Eigen::MatrixXd 
 		 *
 		 */
-		MatrixXd Fetch_A_State();
+		Eigen::MatrixXd Fetch_A_State();
 
 
 		/**
 		 * \brief Fetch the input part of the Constraint Coefficients
 		 *
-		 * \return	MatrixXd 
+		 * \return	Eigen::MatrixXd 
 		 *
 		 */
-		MatrixXd Fetch_A_Input();
+		Eigen::MatrixXd Fetch_A_Input();
 
 	
 		/**
 		 * \brief Fetch the virtual input part of the Constraint Coefficients
 		 *
-		 * \return	MatrixXd 
+		 * \return	Eigen::MatrixXd 
 		 *
 		 */
-		MatrixXd Fetch_A_Virtual();
+		Eigen::MatrixXd Fetch_A_Virtual();
+
+
+		int GetExtendedDim() const;
+		int GetStateDim() const;
+		int GetLevel() const;
 
 	private:
 
 		int StateDim_;
 		int NumberInputs_;
 		int DisturbanceDim_;
+
+		int ExtendedInputDim_;
 		
 		int Level_;
 		int Transient_;
 
+		bool ThereAreInputConstraints_;
+
 		HPolyhedron InputCnstrSet_;
 		HPolyhedron DisturbanceSet_;
 
-		MatrixXd A_lifted_;
+		Eigen::MatrixXd A_lifted_;
 
 		HPolyhedron CIS_;
 
-		MatrixXd Ed_;
+		Eigen::MatrixXd Ed_BR_;
 
+		Eigen::MatrixXd ExtendedU2U_;
 
 		/**
 		 * \brief Reference to the Brunovsky Form Transformation Class
 		 */
 		BrunovskyForm* brunovsky_form_;
 
-
+		void Reset();
 
 		void ComputeLiftedSystem(int L, int T);
 	
 		std::vector<HPolyhedron> ComputeShrinkedSafeSetsSequence(const HPolyhedron& ss);
 
-		void GenerateBrunovksyForm(const MatrixXd& A, const MatrixXd& B);
+		void GenerateBrunovksyForm(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
 
 		bool cis_computed_;
 };

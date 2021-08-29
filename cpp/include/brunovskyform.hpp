@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include <Eigen/Dense>
 #include "hpolyhedron.hpp"
@@ -36,17 +37,27 @@ namespace cis2m {
 			 */
 			Eigen::MatrixXd GetDisturbanceMatrix(const Eigen::MatrixXd& DisturbanceMatrix);
 
+
 			/**
-			 *  Get the Transformation Matrix (Change of basis to get the 
-			 *  Controllability Form)
+			 * Get the Am, Bm matrices used in the transformation from Controller Form to 
+			 * Brunovksy Form. 
+			 * A_brunovsky = A_controllable + B_brunovsky * Am
+			 * B_brunovksy = B_controllable * Bm
 			 */
-			Eigen::MatrixXd GetTransformationMatrix();
+			std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetIntermediateMatrixes();
 
 
 			/**
 			 * Return the controllability indexes
 			 */
 			std::vector<int> GetControllabilityIndexes();
+
+
+			/**
+			 *  Get the Transformation Matrix (Change of basis to get the 
+			 *  Controllability Form)
+			 */
+			Eigen::MatrixXd GetTransformationMatrix();
 
 
 			/**
@@ -77,5 +88,9 @@ namespace cis2m {
 
 			/// Brunovsky Form Bm Matrix
 			Eigen::MatrixXd Bm_;
+		
+			/// Brunovsky Form Am Matrix
+			Eigen::MatrixXd Am_;
+
 	};
 }

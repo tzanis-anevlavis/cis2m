@@ -56,9 +56,6 @@ namespace cis2m {
 		VectorXd ineq = Ai_ * point - bi_;
 		for (int i = 0; i < ineq.size(); i++) {
 			if (ineq(i) > 0) {
-				std::cout << "A: " << Ai_.row(i) << std::endl;
-				std::cout << "x: " << point.transpose() << std::endl;
-				std::cout << "b: " << bi_(i) << std::endl << std::endl;
 				output = false;
 				break;
 			}
@@ -102,26 +99,26 @@ namespace cis2m {
 			}
 
 			// Create the inequalities constraints
-			std::cout << "Setting Constraint coefficients..." << std::endl;
+			//std::cout << "Setting Constraint coefficients..." << std::endl;
 			for (int i = 0; i < NumIneqs_; i++) {
 				MPConstraint* con = solver->MakeRowConstraint(-infinity, bi_(i), "");
-				std::cout << "[" << i << "]:";
+				//std::cout << "[" << i << "]:";
 				for (int j = 0; j < NumVars; j++) {
 					con->SetCoefficient(x[j],  Ai_(i, j));
-					std::cout << Ai_(i, j) << " ";
+					//std::cout << Ai_(i, j) << " ";
 				}
-				std::cout << std::endl;
+				//std::cout << std::endl;
 			}
 
 			// Define the objective
 			MPObjective* const obj = solver->MutableObjective();
 			VectorXd cost_coeff = VectorXd(A_other.row(hp));
-			std::cout << "Cost:" << std::endl;
+			//std::cout << "Cost:" << std::endl;
 			for (int j = 0; j < NumVars; j++) {
 				obj->SetCoefficient(x[j], cost_coeff(j));
-				std::cout << cost_coeff(j) << " ";
+				//std::cout << cost_coeff(j) << " ";
 			}
-			std::cout << std::endl;
+			//std::cout << std::endl;
 			obj->SetMaximization();
 
 			const MPSolver::ResultStatus result_status = solver->Solve();
@@ -139,15 +136,17 @@ namespace cis2m {
 					std::cout << "Always Good!" << std::endl;
 				} else {
 					supp(hp) = obj->Value();
+					/*
 					std::cout << "Optimal Value = " << supp(hp) << std::endl;
 					std::cout << "x: ";
 					for (auto xi : x) {
 						std::cout << xi->solution_value() << " ";
 					}
 					std::cout << std::endl;
+					*/
 				}
 			}
-			std::cout << std::endl;
+			//std::cout << std::endl;
 		}
 		return supp;
 	}

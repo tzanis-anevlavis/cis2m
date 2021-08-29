@@ -32,10 +32,8 @@
 
 #include "cis_generator.hpp"
 
-#include <chrono>
 #include <iostream>
 
-using namespace std::chrono;
 
 using Eigen::MatrixXd;
 
@@ -49,10 +47,15 @@ int main() {
 	B << 0.0003, 0, 0, 0, 0.0003, 0, 0, 0, 0.0003, 0.0072, 0, 0, 0, 0.0072, 0, 0, 0, 0.0072, 0.1200, 0, 0, 0, 0.1200, 0, 0, 0, 0.1200;
 
 	// Safe Set 
-	MatrixXd Gx(30, 9);
-	Gx << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0.0, 0.0, 0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.3162, 0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.3162, 0.0, 0, 0, 0, 0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0, 0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0, 0, 0; 
-	MatrixXd Fx(30, 1);
-	Fx << 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 0.866, 0.866, 0.866, 0.866, 0.866, 0.866, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, -0.8321, -0.8321, 0.9487, 0.9487;
+	MatrixXd Gx(MatrixXd::Zero(6, 9));
+	for (int i = 0; i < 6; i++) {
+		if (i < 3)
+			Gx(i, i) = 1.0;
+		else
+			Gx(i, i - 3) = -1.0;
+	}
+	MatrixXd Fx(6, 1);
+	Fx << 3.0, 3.0, 3.0, 3.0, 3.0, 3.0;
 	cis2m::HPolyhedron SafeSet(Gx, Fx);
 
 	std::cout << "Original A: " << std::endl << A << std::endl;
@@ -61,13 +64,27 @@ int main() {
 	std::cout << "Original State Gx = " << std::endl;
 	std::cout << Gx << std::endl;
 	std::cout << "Original State Fx = " << std::endl;
-	std::cout << Fx.transpose() << std::endl;
+	std::cout << Fx << std::endl;
+
+	// ================================
+	// Disturbance 
+	MatrixXd E = MatrixXd::Identity(9, 9);
+	MatrixXd Wa(MatrixXd::Zero(2 * 9, 9));
+	Wa.block(0, 0, 9, 9) = MatrixXd::Identity(9, 9);
+	Wa.block(9, 0, 9, 9) = -MatrixXd::Identity(9, 9);
+	MatrixXd Wb(MatrixXd::Zero(2 * 9, 1));
+	for (int i = 0; i < 2 * 9; i++) {
+		Wb(i) = 0.01;
+	}
+	cis2m::HPolyhedron PP(Wa, Wb);
 
 	// ==============================================================================================
-	// CIS (No disturbance)
-	cis2m::CISGenerator cisg(A, B);
+	// CIS
+	cis2m::CISGenerator cisg(A, B, E);
 
-	std::cout << "Computing the CIS..." << std::endl;
+	// Add disturbance information
+	cisg.AddDisturbanceSet(PP);
+
 	// Computing the CIS given a Safe set
 	cisg.computeCIS(SafeSet, 6, 0);
 	cis2m::HPolyhedron CIS = cisg.Fetch_CIS();

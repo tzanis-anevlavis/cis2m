@@ -2,6 +2,7 @@
 #include <iostream>
 
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace cis2m {
 	// Helper Functions
@@ -148,7 +149,9 @@ namespace cis2m {
 		A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
 		B_cntrl_form_(MatrixXd::Zero(Bd.rows(), Bd.cols())),
 		TransformationMatrix_(MatrixXd::Zero(Ad.rows(), Ad.rows())),
+		Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
 		Bm_(MatrixXd::Zero(Bd.cols(), Bd.cols())) {
+
 
 		// Compute the controllability matrix
 		MatrixXd CTRL = ComputeCTRL(Ad, Bd);	
@@ -172,6 +175,7 @@ namespace cis2m {
 
 		for (int i = 0; i < sigmas.size(); i++) {
 			Bm_.row(i) = B_cntrl_form_.row(sigmas[i] - 1);
+			Am_.row(i) = A_cntrl_form_.row(sigmas[i] - 1);
 		}
 
 		// Generate the Brunovksy Forms
@@ -198,7 +202,7 @@ namespace cis2m {
 	HPolyhedron BrunovskyForm::GetDynConstraints(const HPolyhedron& DynCnstr) {
 		// Return the HPolyhedron [F, b] F x < b
 		MatrixXd F_state_cnstr = DynCnstr.Ai() * TransformationMatrix_.inverse();
-		MatrixXd b_state_cnstr = DynCnstr.bi();
+		VectorXd b_state_cnstr = DynCnstr.bi();
 
 		return HPolyhedron(F_state_cnstr, b_state_cnstr);
 	}
@@ -206,7 +210,7 @@ namespace cis2m {
 
 	HPolyhedron BrunovskyForm::GetInputConstraints(const HPolyhedron& InputCnstr) {
 		MatrixXd F_input_cnstr = InputCnstr.Ai() * Bm_.inverse();
-		MatrixXd b_input_cnstr = InputCnstr.bi();
+		VectorXd b_input_cnstr = InputCnstr.bi();
 
 		return HPolyhedron(F_input_cnstr, b_input_cnstr);
 	}
@@ -216,6 +220,13 @@ namespace cis2m {
 		MatrixXd E_cntrl_form = TransformationMatrix_ * DisturbanceMatrix;
 		return E_cntrl_form;
 	}
+
+
+	std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetIntermediateMatrixes() {
+		std::pair<MatrixXd, MatrixXd> output(Am_, Bm_);
+		return output;
+	}
+
 
 	MatrixXd BrunovskyForm::GetTransformationMatrix() {
 		return TransformationMatrix_;
