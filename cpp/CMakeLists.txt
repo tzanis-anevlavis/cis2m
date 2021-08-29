@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-project(cis2m 
-	LANGUAGES CXX
+project(cis2m LANGUAGES CXX
 	VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(ortools REQUIRED)
 
@@ -66,7 +64,7 @@ target_link_libraries(cis2m
 	)
 
 target_compile_definitions(cis2m 
-	PUBLIC CIS2M_DEBUG
+	#PUBLIC CIS2M_DEBUG
 	INTERFACE
 	$<INSTALL_INTERFACE:USING_cis2m>
 	)
@@ -162,6 +160,8 @@ target_link_libraries(cis_test_0 cis2m)
 add_executable(cis_test_1 ${test_folder}/test_cisgenerator1.cc)
 target_link_libraries(cis_test_1 cis2m)
 
+add_executable(cis_test_2 ${test_folder}/test_cisgenerator2.cc)
+target_link_libraries(cis_test_2 cis2m)
 
 
 add_test(
