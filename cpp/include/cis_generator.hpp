@@ -105,8 +105,39 @@ class CISGenerator {
 		Eigen::MatrixXd Fetch_A_Virtual();
 
 
+		/**
+		 * \brief Compute the input in the Brunovksy coordinates
+		 * 
+		 * \param[in]	u	Input in the original coordinates	
+		 * \param[in]	x	State in the original coordinates	
+		 *
+		 * \return	Eigen::VectorXd	Input in Brunovksy coordinates
+		 */
+		Eigen::VectorXd TransformU2B(const Eigen::VectorXd& u, const Eigen::VectorXd& x);
+
+
+		/**
+		 * \brief Compute the input in the Original coordinates
+		 * 
+		 * \param[in]	u	Input in the Brunovksy coordinates	
+		 * \param[in]	x	State in the original coordinates	
+		 *
+		 * \return	Eigen::VectorXd	Input in Original coordinates
+		 */
+		Eigen::VectorXd TransformU2O(const Eigen::VectorXd& u, const Eigen::VectorXd& x);
+
+
+		
+		/**
+		 * \brief Get the size of the virtual input 
+		 */
 		int GetExtendedDim() const;
+
+		/**
+		 * \brief Get the size of the state
+		 */
 		int GetStateDim() const;
+
 		int GetLevel() const;
 
 	private:

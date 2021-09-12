@@ -152,10 +152,8 @@ namespace cis2m {
 		Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
 		Bm_(MatrixXd::Zero(Bd.cols(), Bd.cols())) {
 
-
 		// Compute the controllability matrix
 		MatrixXd CTRL = ComputeCTRL(Ad, Bd);	
-
 
 		// Compute the controllability indexes and the intermediate Cbar matrix
 		std::pair<MatrixXd, std::vector<int>> data = ComputeControllabilityIndexes(CTRL, Bd.cols());

@@ -11,7 +11,6 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 
 namespace cis2m {
-
 	// CLASS ===================================================================
 	HPolyhedron::HPolyhedron() {
 		SpaceDim_ = 0;

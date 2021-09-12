@@ -15,7 +15,6 @@ namespace cis2m {
 	}
 
 
-
 	// ========================================================================
 	// CLASS
 	CISGenerator::CISGenerator(const MatrixXd& Ad, const MatrixXd& Bd) {
@@ -221,8 +220,6 @@ namespace cis2m {
 			mcisA_tot << mcisA;
 			mcisb_tot << mcisb;
 		}
-
-
 		// Get the transformation
 		MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
 		mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) = 
@@ -241,7 +238,6 @@ namespace cis2m {
 		std::cout << std::endl;
 #endif
 	}
-
 
 	HPolyhedron CISGenerator::Fetch_CIS() {
 		if (cis_computed_) {
@@ -279,6 +275,22 @@ namespace cis2m {
 			return {};	
 		}
 	}
+
+
+	VectorXd CISGenerator::TransformU2B(const VectorXd& u, const VectorXd& x) {
+		MatrixXd T = brunovsky_form_->GetTransformationMatrix();
+		std::pair<MatrixXd, MatrixXd> AmBm = brunovsky_form_->GetIntermediateMatrixes();
+		return AmBm.second * u + AmBm.first * T * x;
+	}
+
+
+	VectorXd CISGenerator::TransformU2O(const VectorXd& u, const VectorXd& x) {
+		MatrixXd T = brunovsky_form_->GetTransformationMatrix();
+		std::pair<MatrixXd, MatrixXd> AmBm = brunovsky_form_->GetIntermediateMatrixes();
+		return AmBm.second.inverse() * (u - AmBm.first * T * x);
+	}
+
+
 
 	int CISGenerator::GetExtendedDim() const {
 		return NumberInputs_ * Level_;
