@@ -115,7 +115,7 @@ for i = 1:length(implicitRCIS)
 
             % Extract state input matrices in y = (z,v)
             Gz = rcisLiftedA(:,1:n);
-            Gvirtual = rcisLiftedA(n+1,end);
+            Gvirtual = rcisLiftedA(:,n+1:end);
             % Map back from Brunovsky to original space
             Gstate = Gz * Pmat;
             Ginput = Gvirtual(:,1:m);
