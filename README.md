@@ -22,7 +22,7 @@ Full video [here](https://tinyurl.com/drone-supervision-cis).
 ### Related publications
 1. T. Anevlavis, Z. Liu, N. Ozay and P. Tabuada,
 "Controlled invariant sets: implicit closed-form representations and applications",
-arXiv:2107.08566 [math.OC], 2021. [ALOT21](https://arxiv.org/abs/2107.08566)
+arXiv:2107.08566 [math.OC], 2021. [ALOT21b](https://arxiv.org/abs/2107.08566)
 
 2. Tzanis Anevlavis and Paulo Tabuada,
 "Computing controlled invariant sets in two moves",
@@ -34,7 +34,7 @@ In Proceedings of the 23rd ACM International Conference on Hybrid Systems: Compu
 
 4. T. Anevlavis, Z. Liu, N. Ozay and P. Tabuada,
 "An enhanced hierarchy for (robust) controlled invariance",
-In 2021 American Control Conference (ACC). (Accepted)
+In 2021 American Control Conference (ACC). [ALOT21a](https://ieeexplore.ieee.org/document/9483217)
 
 5. Luigi Pannocchi, Tzanis Anevlavis, and Paulo Tabuada,
 "Trust your supervisor: quadrotor obstacle avoidance using controlled invariant sets",

@@ -3,7 +3,7 @@ The MATLAB version of the repository makes use of the Multi-Parametric Toolbox 3
 M. Herceg, M. Kvasnica, C. Jones, and M. Morari. Multi-Parametric Toolbox 3.0. In Proc. of the European Control Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510. http://control.ee.ethz.ch/mpt .
 
 ### Quick-start:
-For more information on the quantities below please refer to  [ALOT21](https://arxiv.org/abs/2107.08566). The main wrapper function for this code is `computeRCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,implicit,L,T)`:
+For more information on the quantities below please refer to  [ALOT21b](https://arxiv.org/abs/2107.08566). The main wrapper function for this code is `computeRCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,implicit,L,T)`:
   * `A`, `B`, and `E` are matrices defining the discrete-time linear system: `x^+ = Ax + Bu + Ew`.
   * `Gx` is a matrix and `Fx` is a vector defining the polyhedral safe set `Sx = {x \in \R^n | Gx x <= Fx}`.
   * `Gu` and `Fu` define input constraints `Su = {u \in \R^m | Gu u <= Fu}`. If no costraints use `Gu = []`, `Fu = []`.
