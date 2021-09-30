@@ -35,7 +35,7 @@ HPolyhedron::HPolyhedron(const Eigen::MatrixXd &Ai, const Eigen::VectorXd &bi,
   valid_ = true;
 }
 
-// Check emptiness
+// Check emptiness of HPolyhedron
 bool HPolyhedron::isEmpty() const {
 
   if (!valid_) {
@@ -43,6 +43,7 @@ bool HPolyhedron::isEmpty() const {
     return true;
   }
 
+  // Select solver
   std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
   if (!solver) {
     LOG(WARNING) << "Solver unavailable.";
@@ -93,6 +94,81 @@ bool HPolyhedron::isEmpty() const {
   }
 }
 
+// Check if HPolyhedron contains another HPolyhedron
+bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
+
+  int YSpaceDim = Y.GetSpaceDim();
+  if (SpaceDim_ != YSpaceDim) {
+    std::cerr << "The HPolyhedron objects have different dimensions!"
+              << std::endl;
+    return false;
+  }
+  if (!valid_) {
+    std::cerr << "Calling a method on a empty HPolyhedron!" << std::endl;
+    return true;
+  }
+  if (Y.isEmpty()) {
+    std::cout << "HPolyhedron is empty and, hence, trivially contained."
+              << std::endl;
+    return true;
+  }
+
+  // Idea: if the HPolyhedron contains Y, then maximizing the left-hand side of
+  // all inequalities of the HPolyhedron, when constrained in Y, still satisfies
+  // the right-hand side of the inequalities.
+
+  // Select solver
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  if (!solver) {
+    LOG(WARNING) << "Solver unavailable.";
+    return true;
+  }
+  solver->Clear();
+
+  const double infinity = solver->infinity();
+  // Create the X variable
+  LOG(INFO) << "Number of variables = " << SpaceDim_;
+  int NumVars = SpaceDim_;
+  std::vector<MPVariable *> x(NumVars);
+  for (int i = 0; i < NumVars; i++) {
+    x[i] = solver->MakeNumVar(-1000.0, 1000.0, "");
+  }
+  LOG(INFO) << "Number of variables = " << solver->NumVariables();
+
+  // Create the inequality constraints: x \in Y
+  Eigen::MatrixXd Y_Ai = Y.Ai();
+  Eigen::VectorXd Y_bi = Y.bi();
+  for (int i = 0; i < NumIneqs_; i++) {
+    MPConstraint *con = solver->MakeRowConstraint(-infinity, Y_bi(i));
+    for (int j = 0; j < NumVars; j++) {
+      con->SetCoefficient(x[j], Y_Ai(i, j));
+    }
+  }
+
+  // Define the objective: each inequality in the HPolyhedron
+  MPObjective *const obj = solver->MutableObjective();
+  for (int i = 0; i < NumIneqs_; i++) {
+    for (int j = 0; j < NumVars; j++) {
+      obj->SetCoefficient(x[j], Ai_(i, j));
+    }
+    obj->SetMaximization();
+
+    const MPSolver::ResultStatus result_status = solver->Solve();
+    LOG(INFO) << "Inequality: " << i << " - Solution status: " << result_status;
+    if (result_status != MPSolver::INFEASIBLE) {
+      return false;
+    }
+    // If the maximization value exceed the right-hand side value of the
+    // inequality, then return false.
+    if (obj->Value() > bi_(i)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Check if HPolyhedron contains a point
 bool HPolyhedron::Contains(const Eigen::VectorXd &point) const {
   bool output = true;
 

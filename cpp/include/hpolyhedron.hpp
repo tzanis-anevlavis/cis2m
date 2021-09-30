@@ -37,6 +37,15 @@ public:
    *
    * return	Boolean
    */
+  bool ContainsPoly(HPolyhedron &Y) const;
+
+  /**
+   * \brief Check if a point belongs to the Polyhedron
+   *
+   * \param[in]	point	Point to be tested
+   *
+   * return	Boolean
+   */
   bool Contains(const Eigen::VectorXd &point) const;
 
   /**

@@ -210,6 +210,7 @@ void CISGenerator::computeCIS(const HPolyhedron &SafeSet, int L, int T) {
     }
     Acurr *= A_lifted_;
   }
+  std::cout << std::endl << A_lifted_ << std::endl;
 
   MatrixXd mcisA_tot(mcisA.rows() + mcisA_ctrl.rows(), mcisA.cols());
   VectorXd mcisb_tot(mcisA_tot.rows());
