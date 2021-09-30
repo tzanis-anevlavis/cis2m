@@ -29,51 +29,113 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-
 #include "cis_generator.hpp"
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
+
+// #include "gurobiRoutines.h"
 
 using namespace std::chrono;
 
 using Eigen::MatrixXd;
 
 int main() {
-	// System Dynamics 
-	MatrixXd At(9, 9);
-	At << 1.0, 0, 0, 0, 0,0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0;
-	MatrixXd A = At.transpose();
+  // System Dynamics
+  MatrixXd At(9, 9);
+  At << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0,
+      0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0,
+      0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0,
+      1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0,
+      0.1200, 0, 0, 1.0;
+  MatrixXd A = At.transpose();
 
-	MatrixXd B(9,3);
-	B << 0.0003, 0, 0, 0, 0.0003, 0, 0, 0, 0.0003, 0.0072, 0, 0, 0, 0.0072, 0, 0, 0, 0.0072, 0.1200, 0, 0, 0, 0.1200, 0, 0, 0, 0.1200;
+  MatrixXd B(9, 3);
+  B << 0.0003, 0, 0, 0, 0.0003, 0, 0, 0, 0.0003, 0.0072, 0, 0, 0, 0.0072, 0, 0,
+      0, 0.0072, 0.1200, 0, 0, 0, 0.1200, 0, 0, 0, 0.1200;
 
-	// Safe Set 
-	MatrixXd Gx(30, 9);
-	Gx << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0.0, 0.0, 0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.3162, 0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.3162, 0.0, 0, 0, 0, 0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0, 0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0, 0, 0; 
-	MatrixXd Fx(30, 1);
-	Fx << 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 0.866, 0.866, 0.866, 0.866, 0.866, 0.866, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, 0.9487, -0.8321, -0.8321, 0.9487, 0.9487;
-	cis2m::HPolyhedron SafeSet(Gx, Fx);
+  // Safe Set
+  MatrixXd Gx(30, 9);
+  Gx << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0,
+      0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0,
+      0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0,
+      0, 0, 0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0,
+      0, 0, 0, -1.0, 0.0, 0.0, 0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.3162, 0, 0,
+      0, 0, 0, 0, 0, 0.3162, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.3162, 0.0, 0, 0, 0,
+      0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, -0.3162, 0.0, 0.0, 0, 0, 0,
+      0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.3162, 0.0, 0.0, 0, 0, 0, 0,
+      0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0, 0, 0, 0.0, -0.5547, 0.0, 0, 0, 0, 0,
+      0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0, 0, 0, 0.0, 0.0, -0.3162, 0, 0, 0, 0,
+      0, 0;
+  MatrixXd Fx(30, 1);
+  Fx << 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 0.866, 0.866, 0.866, 0.866, 0.866, 0.866,
+      2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 0.9487, 0.9487, 0.9487,
+      0.9487, 0.9487, 0.9487, 0.9487, 0.9487, -0.8321, -0.8321, 0.9487, 0.9487;
+  cis2m::HPolyhedron SafeSet(Gx, Fx);
 
-	std::cout << "Original A: " << std::endl << A << std::endl;
-	std::cout << "Original B: " << std::endl << B << std::endl;
+  // // Print out input data:
+  // std::cout << "Original A: " << std::endl << A << std::endl;
+  // std::cout << "Original B: " << std::endl << B << std::endl;
+  // std::cout << "Original State Gx = " << std::endl;
+  // std::cout << Gx << std::endl;
+  // std::cout << "Original State Fx = " << std::endl;
+  // std::cout << Fx.transpose() << std::endl;
 
-	std::cout << "Original State Gx = " << std::endl;
-	std::cout << Gx << std::endl;
-	std::cout << "Original State Fx = " << std::endl;
-	std::cout << Fx.transpose() << std::endl;
+  // ==============================================================================================
+  // CIS (No disturbance)
+  cis2m::CISGenerator cisg(A, B);
 
-	// ==============================================================================================
-	// CIS (No disturbance)
-	cis2m::CISGenerator cisg(A, B);
+  std::cout << "Computing the CIS..." << std::endl;
+  // Computing the CIS given a Safe set
+  cisg.computeCIS(SafeSet, 6, 0);
+  cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
 
-	std::cout << "Computing the CIS..." << std::endl;
-	// Computing the CIS given a Safe set
-	cisg.computeCIS(SafeSet, 6, 0);
-	cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
+  // std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols() <<
+  // std::endl; std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() <<
+  // std::endl; std::cout << "CIS A:  " << std::endl << CIS.Ai() << std::endl;
+  // std::cout << "CIS b:  " << std::endl << CIS.bi() << std::endl;
+  std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols()
+            << std::endl;
 
-	std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols() << std::endl;
-	std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl; 
+  //   // Save in file:
+  //   std::ofstream myfile;
+  //   myfile.open("cis_out_nodist.csv");
+  //   myfile << "Original A: " << std::endl << A << std::endl;
+  //   myfile << "Original B: " << std::endl << B << std::endl;
+  //   myfile << "Original State Gx: " << std::endl << Gx << std::endl;
+  //   myfile << "Original State Fx: " << std::endl << Fx << std::endl;
+  //   myfile << "CIS A:  " << std::endl << CIS.Ai() << std::endl;
+  //   myfile << "CIS b:  " << std::endl << CIS.bi() << std::endl;
+  //   myfile.close();
 
-	return 0;
+  // Check emptiness:
+  bool isEmpty_Safe = SafeSet.isEmpty();
+  std::cout << "SafeSet Not-Empty: " << std::endl << isEmpty_Safe << std::endl;
+
+  bool isEmpty_CIS = CIS.isEmpty();
+  std::cout << "CIS Empty: " << std::endl << isEmpty_CIS << std::endl;
+
+  cis2m::HPolyhedron CISTEST(CIS.Ai(),
+                             CIS.bi() - 20 * Eigen::VectorXd::Ones(270));
+  bool isEmpty_CIST = CISTEST.isEmpty();
+  std::cout << "CISTEST Empty: " << std::endl << isEmpty_CIST << std::endl;
+
+  //   // Use Gurobi:
+  //   // RCIS inequalitites:
+  //   Eigen::MatrixXd Aineq = SafeSet.Ai();
+  //   Eigen::VectorXd bineq = SafeSet.bi();
+  //   // Original cost: || u - udes ||^2.
+  //   MatrixXd H =
+  //       Eigen::MatrixXd::Zero(SafeSet.GetSpaceDim(), SafeSet.GetSpaceDim());
+  //   VectorXd c = Eigen::VectorXd::Zero(SafeSet.GetSpaceDim());
+  //   // Call solver:
+  //   opt_result res = solveGurobi(H, c, Aineq, bineq, 0);
+  //   std::cout << "SafeSet Not-Empty: " << std::endl << res.solved <<
+  //   std::endl;
+
+  return 0;
 }

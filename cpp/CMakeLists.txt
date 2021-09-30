@@ -163,6 +163,9 @@ target_link_libraries(cis_test_1 cis2m)
 add_executable(cis_test_2 ${test_folder}/test_cisgenerator2.cc)
 target_link_libraries(cis_test_2 cis2m)
 
+add_executable(brunovsky_test_0 ${test_folder}/test_brunovsky.cc)
+target_link_libraries(brunovsky_test_0 cis2m)
+
 
 add_test(
 	NAME hpoly_affine_test_0

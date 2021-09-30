@@ -57,7 +57,7 @@ function RCIS = computeRCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,implicit,L,T)
 %           {(x,u,v) \in \R^n x \R^m x \R^{m(T+L)} | rcisA(x,u,v) <= rcisb}.
 
 %% Add support folder to path.
-addpath('./support_functions/');
+% addpath('./support_functions/');
 
 %% Input arguments check.
 inputArgCheck
@@ -129,7 +129,7 @@ for i = 1:length(implicitRCIS)
         Px = P.projection(1:size(A,2),'ifourier');  % 'ifourier' seems to be better than 'mplp' for many cases.
         rcisA = Px.A; rcisb = Px.b;
         % Return to original coordinates:
-        rcisA = cisA * Pmat;
+        rcisA = rcisA * Pmat;
 
         disp('Projection done!')
     end
