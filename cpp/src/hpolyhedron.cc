@@ -94,6 +94,11 @@ bool HPolyhedron::isEmpty() const {
   }
 }
 
+
+int HPolyhedron::GetSpaceDim() {
+	return SpaceDim_;
+}
+
 // Check if HPolyhedron contains another HPolyhedron
 bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
 
