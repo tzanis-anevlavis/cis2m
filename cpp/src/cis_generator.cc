@@ -223,10 +223,10 @@ void CISGenerator::computeCIS(const HPolyhedron &SafeSet, int L, int T) {
     mcisb_tot << mcisb;
   }
   // Get the transformation
-  MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
-  mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) =
-      mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) * Transform;
-  // Note: The CIS is expressed in the original basis
+  //   MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
+  //   mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) =
+  //       mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) * Transform;
+  //   // Note: The CIS is expressed in the original basis
   CIS_ = HPolyhedron(mcisA_tot, mcisb_tot);
   cis_computed_ = true;
 
@@ -275,6 +275,8 @@ MatrixXd CISGenerator::Fetch_A_Virtual() {
     return {};
   }
 }
+
+MatrixXd CISGenerator::Fetch_A_lifted() { return A_lifted_; }
 
 VectorXd CISGenerator::TransformU2B(const VectorXd &u, const VectorXd &x) {
   MatrixXd T = brunovsky_form_->GetTransformationMatrix();

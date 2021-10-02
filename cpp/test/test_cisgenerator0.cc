@@ -95,8 +95,9 @@ int main() {
   cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
 
   // std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols() <<
-  // std::endl; std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() <<
-  // std::endl; std::cout << "CIS A:  " << std::endl << CIS.Ai() << std::endl;
+  // std::endl;
+  //   std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl;
+  //   std::cout << "CIS A:  " << std::endl << CIS.Ai() << std::endl;
   // std::cout << "CIS b:  " << std::endl << CIS.bi() << std::endl;
   std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols()
             << std::endl;
@@ -116,11 +117,11 @@ int main() {
   bool isEmpty_Safe = SafeSet.isEmpty();
   std::cout << "SafeSet Not-Empty: " << std::endl << isEmpty_Safe << std::endl;
 
-  bool isEmpty_CIS = CIS.isEmpty();
-  std::cout << "CIS Empty: " << std::endl << isEmpty_CIS << std::endl;
+  //   bool isEmpty_CIS = CIS.isEmpty();
+  //   std::cout << "CIS Empty: " << std::endl << isEmpty_CIS << std::endl;
 
   cis2m::HPolyhedron CISTEST(CIS.Ai(),
-                             CIS.bi() - 20 * Eigen::VectorXd::Ones(270));
+                             CIS.bi()); //  - 20 * Eigen::VectorXd::Ones(270));
   bool isEmpty_CIST = CISTEST.isEmpty();
   std::cout << "CISTEST Empty: " << std::endl << isEmpty_CIST << std::endl;
 
@@ -136,6 +137,9 @@ int main() {
   //   opt_result res = solveGurobi(H, c, Aineq, bineq, 0);
   //   std::cout << "SafeSet Not-Empty: " << std::endl << res.solved <<
   //   std::endl;
+
+  bool isInv_CIST = CISTEST.isPositivelyInvariant(cisg.Fetch_A_lifted());
+  std::cout << "CISTEST Invariant: " << std::endl << isInv_CIST << std::endl;
 
   return 0;
 }

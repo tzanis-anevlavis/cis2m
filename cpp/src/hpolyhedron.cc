@@ -57,7 +57,7 @@ bool HPolyhedron::isEmpty() const {
   int NumVars = SpaceDim_;
   std::vector<MPVariable *> x(NumVars);
   for (int i = 0; i < NumVars; i++) {
-    x[i] = solver->MakeNumVar(-1000.0, 1000.0, "");
+    x[i] = solver->MakeNumVar(-100000.0, 100000.0, "");
   }
   LOG(INFO) << "Number of variables = " << solver->NumVariables();
 
@@ -94,10 +94,7 @@ bool HPolyhedron::isEmpty() const {
   }
 }
 
-
-int HPolyhedron::GetSpaceDim() {
-	return SpaceDim_;
-}
+int HPolyhedron::GetSpaceDim() { return SpaceDim_; }
 
 // Check if HPolyhedron contains another HPolyhedron
 bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
@@ -118,7 +115,7 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
     return true;
   }
 
-  // Idea: if the HPolyhedron contains Y, then maximizing the left-hand side of
+  // If the HPolyhedron contains Y, then maximizing the left-hand side of
   // all inequalities of the HPolyhedron, when constrained in Y, still satisfies
   // the right-hand side of the inequalities.
 
@@ -136,7 +133,7 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
   int NumVars = SpaceDim_;
   std::vector<MPVariable *> x(NumVars);
   for (int i = 0; i < NumVars; i++) {
-    x[i] = solver->MakeNumVar(-1000.0, 1000.0, "");
+    x[i] = solver->MakeNumVar(-100000.0, 100000.0, "");
   }
   LOG(INFO) << "Number of variables = " << solver->NumVariables();
 
@@ -160,12 +157,14 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
 
     const MPSolver::ResultStatus result_status = solver->Solve();
     LOG(INFO) << "Inequality: " << i << " - Solution status: " << result_status;
-    if (result_status != MPSolver::INFEASIBLE) {
+    if (result_status == MPSolver::INFEASIBLE) {
       return false;
     }
     // If the maximization value exceed the right-hand side value of the
     // inequality, then return false.
-    if (obj->Value() > bi_(i)) {
+    if (obj->Value() > bi_(i) + 1e-6) {
+      std::cout << "obj->Value: " << obj->Value() << " > bi_(i): " << bi_(i)
+                << std::endl;
       return false;
     }
   }
@@ -199,6 +198,46 @@ bool HPolyhedron::Contains(const Eigen::VectorXd &point) const {
     }
   }
   return output;
+}
+
+bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
+
+  // Argument checks
+  if (A.cols() != A.rows()) {
+    std::cerr << "Matrix 'A' must be square." << std::endl;
+    return false;
+  }
+  //   if ((Β != Eigen::MatrixXd::Zero(1)) && (A.rows() != B.rows())) {
+  //     std::cerr << "Matrices 'A' and 'B' must have the same number of rows."
+  //               << std::endl;
+  //     return false;
+  //   }
+  //   if (((E - Eigen::MatrixXd::Zero(1)).norm() > 1e-6) &&
+  //       (A.rows() != E.rows())) {
+  //     std::cerr << "Matrices 'A' and 'E' must have the same number of rows."
+  //               << std::endl;
+  //     return false;
+  //   }
+  if (A.rows() != Ai_.cols()) {
+    std::cerr
+        << "Matrix 'A' rows must be the same as the HPolyhedron's dimension."
+        << std::endl;
+    return false;
+  }
+
+  //   if ((E - Eigen::MatrixXd::Zero(1)).norm() < 1e-6) {
+  //     std::cout << "Model has no disturbance." << std::endl;
+  //   }
+
+  Eigen::MatrixXd PreA = Ai_ * A;
+  HPolyhedron Pre(PreA, bi_);
+  HPolyhedron This(Ai_, bi_);
+
+  if (Pre.ContainsPoly(This)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 // Support

@@ -56,6 +56,18 @@ public:
   bool isEmpty() const;
 
   /**
+   * \brief Check if the HPolyhedron is (Controlled or Positively) Invariant wrt
+   * x^+ = Ax + Bu + Ew
+   *
+   * \param[in]	A	State matrix A
+   * \param[in]	B	Input matrix B, default value Eigen::MatrixXd::Zero(1)
+   * \param[in]	E	Disturbance matrix E, Eigen::MatrixXd::Zero(1)
+   *
+   * return	Boolean
+   */
+  bool isPositivelyInvariant(const Eigen::MatrixXd &A) const;
+
+  /**
    * \brief Compute the support of the polyhedron along
    * 	the directions provided in A_other
    * \param[in]	A_other	Matrix containing the directions as rows

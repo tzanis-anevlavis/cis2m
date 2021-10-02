@@ -97,6 +97,14 @@ public:
   Eigen::MatrixXd Fetch_A_Virtual();
 
   /**
+   * \brief Fetch the matrix A of the lifted companion system.
+   *
+   * \return	Eigen::MatrixXd
+   *
+   */
+  Eigen::MatrixXd Fetch_A_lifted();
+
+  /**
    * \brief Compute the input in the Brunovksy coordinates
    *
    * \param[in]	u	Input in the original coordinates
