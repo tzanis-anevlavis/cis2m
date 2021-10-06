@@ -85,16 +85,14 @@ bool HPolyhedron::isEmpty() const {
     return true;
   } else {
     LOG(INFO) << "Optimal objective value = " << obj->Value();
-    LOG(INFO) << "Solution:";
-    for (int j = 0; j < NumVars; j++) {
-      LOG(INFO) << x[j]->solution_value();
-    }
+    // LOG(INFO) << "Solution:";
+    // for (int j = 0; j < NumVars; j++) {
+    //   LOG(INFO) << x[j]->solution_value();
+    // }
 
     return false;
   }
 }
-
-int HPolyhedron::GetSpaceDim() { return SpaceDim_; }
 
 // Check if HPolyhedron contains another HPolyhedron
 bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
@@ -200,6 +198,7 @@ bool HPolyhedron::Contains(const Eigen::VectorXd &point) const {
   return output;
 }
 
+// Check if HPolyhedron is (Controlled or Positively) Invariant
 bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
 
   // Argument checks
@@ -207,27 +206,12 @@ bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
     std::cerr << "Matrix 'A' must be square." << std::endl;
     return false;
   }
-  //   if ((Β != Eigen::MatrixXd::Zero(1)) && (A.rows() != B.rows())) {
-  //     std::cerr << "Matrices 'A' and 'B' must have the same number of rows."
-  //               << std::endl;
-  //     return false;
-  //   }
-  //   if (((E - Eigen::MatrixXd::Zero(1)).norm() > 1e-6) &&
-  //       (A.rows() != E.rows())) {
-  //     std::cerr << "Matrices 'A' and 'E' must have the same number of rows."
-  //               << std::endl;
-  //     return false;
-  //   }
   if (A.rows() != Ai_.cols()) {
     std::cerr
         << "Matrix 'A' rows must be the same as the HPolyhedron's dimension."
         << std::endl;
     return false;
   }
-
-  //   if ((E - Eigen::MatrixXd::Zero(1)).norm() < 1e-6) {
-  //     std::cout << "Model has no disturbance." << std::endl;
-  //   }
 
   Eigen::MatrixXd PreA = Ai_ * A;
   HPolyhedron Pre(PreA, bi_);
@@ -238,6 +222,32 @@ bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
   } else {
     return false;
   }
+}
+
+bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A,
+                                        const Eigen::MatrixXd &E,
+                                        HPolyhedron W) const {
+  //   // Argument checks
+  //   if (A.cols() != A.rows()) {
+  //     std::cerr << "Matrix 'A' must be square." << std::endl;
+  //     return false;
+  //   }
+  //   if (A.rows() != E.rows()) {
+  //     std::cerr << "Matrices 'A' and 'E' must have the same number of rows."
+  //               << std::endl;
+  //     return false;
+  //   }
+  //   if (A.rows() != Ai_.cols()) {
+  //     std::cerr
+  //         << "Matrix 'A' rows must be the same as the HPolyhedron's
+  //         dimension."
+  //         << std::endl;
+  //     return false;
+  //   }
+  HPolyhedron This(Ai_, bi_);
+  W.affineT(E);
+
+  return (This - W).isPositivelyInvariant(A);
 }
 
 // Support
@@ -531,6 +541,10 @@ Eigen::VectorXd HPolyhedron::bi() const { return bi_; }
 Eigen::MatrixXd HPolyhedron::Ae() const { return Ae_; }
 
 Eigen::VectorXd HPolyhedron::be() const { return be_; }
+
+int HPolyhedron::GetSpaceDim() { return SpaceDim_; }
+
+int HPolyhedron::GetNumInequalities() { return NumIneqs_; }
 
 bool HPolyhedron::isValid() const { return valid_; }
 

@@ -29,68 +29,62 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *****************************************************************************/
 
-
 #include "cis_generator.hpp"
 
+#include <iomanip> // std::setprecision
 #include <iostream>
 
-
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 int main() {
-	// System Dynamics 
-	MatrixXd At(9, 9);
-	At << 1.0, 0, 0, 0, 0,0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0;
-	MatrixXd A = At.transpose();
+  // Safe set:
+  MatrixXd Gx(6, 3);
+  Gx << Eigen::MatrixXd::Identity(3, 3), -Eigen::MatrixXd::Identity(3, 3);
+  VectorXd Fx(6, 1);
+  Fx << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+  cis2m::HPolyhedron SafeSet(Gx, Fx);
 
-	MatrixXd B(9,3);
-	B << 0.0003, 0, 0, 0, 0.0003, 0, 0, 0, 0.0003, 0.0072, 0, 0, 0, 0.0072, 0, 0, 0, 0.0072, 0.1200, 0, 0, 0, 0.1200, 0, 0, 0, 0.1200;
+  // Disturbance set:
+  MatrixXd Gw(6, 3);
+  Gw << MatrixXd::Identity(3, 3), -MatrixXd::Identity(3, 3);
+  VectorXd Fw(6, 1);
+  Fw << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
+  cis2m::HPolyhedron W(Gw, Fw);
 
-	// Safe Set 
-	MatrixXd Gx(MatrixXd::Zero(6, 9));
-	for (int i = 0; i < 6; i++) {
-		if (i < 3)
-			Gx(i, i) = 1.0;
-		else
-			Gx(i, i - 3) = -1.0;
-	}
-	MatrixXd Fx(6, 1);
-	Fx << 3.0, 3.0, 3.0, 3.0, 3.0, 3.0;
-	cis2m::HPolyhedron SafeSet(Gx, Fx);
+  // System Dynamics
+  MatrixXd A(3, 3);
+  A << 0, 1.0, 0, 0, 0, 1.0, 0, 0, 0;
+  MatrixXd B(3, 1);
+  B << 0, 0, 1.0;
+  MatrixXd E = MatrixXd::Identity(3, 3);
 
-	std::cout << "Original A: " << std::endl << A << std::endl;
-	std::cout << "Original B: " << std::endl << B << std::endl;
+  // RCIS
+  cis2m::CISGenerator cisg(2, 0, A, B, E);
+  // Add disturbance information
+  cisg.AddDisturbanceSet(W);
 
-	std::cout << "Original State Gx = " << std::endl;
-	std::cout << Gx << std::endl;
-	std::cout << "Original State Fx = " << std::endl;
-	std::cout << Fx << std::endl;
+  // Computing the CIS given a Safe set
+  cisg.computeCIS(SafeSet, 2, 0);
+  cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
 
-	// ================================
-	// Disturbance 
-	MatrixXd E = MatrixXd::Identity(9, 9);
-	MatrixXd Wa(MatrixXd::Zero(2 * 9, 9));
-	Wa.block(0, 0, 9, 9) = MatrixXd::Identity(9, 9);
-	Wa.block(9, 0, 9, 9) = -MatrixXd::Identity(9, 9);
-	MatrixXd Wb(MatrixXd::Zero(2 * 9, 1));
-	for (int i = 0; i < 2 * 9; i++) {
-		Wb(i) = 0.01;
-	}
-	cis2m::HPolyhedron PP(Wa, Wb);
+  //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
+  //   std::cout << "b: " << std::endl << CIS.bi() << std::endl;
 
-	// ==============================================================================================
-	// CIS
-	cis2m::CISGenerator cisg(A, B, E);
+  //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
 
-	// Add disturbance information
-	cisg.AddDisturbanceSet(PP);
+  //   std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols()
+  //             << std::endl;
+  //   std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl;
 
-	// Computing the CIS given a Safe set
-	cisg.computeCIS(SafeSet, 6, 0);
-	cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
+  cis2m::HPolyhedron CISTT(CIS.Ai(), CIS.bi());
+  std::cout << CISTT.isEmpty() << std::endl;
 
-	std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols() << std::endl;
-	std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl; 
+  //   MatrixXd Alifted = cisg.Fetch_A_lifted();
+  //   std::cout << "Alifted: " << std::endl << Alifted << std::endl;
 
-	return 0;
+  //   std::cout << CISTT.isPositivelyInvariant(Alifted) << std::endl;
+  //   std::cout << CISTT.isPositivelyInvariant(A, E, W) << std::endl;
+
+  return 0;
 }

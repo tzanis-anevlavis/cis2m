@@ -15,7 +15,8 @@ public:
    * \param[in]	Bd	Input matrix of the system
    *
    */
-  CISGenerator(const Eigen::MatrixXd &Ad, const Eigen::MatrixXd &Bd);
+  CISGenerator(const int L, const int T, const Eigen::MatrixXd &Ad,
+               const Eigen::MatrixXd &Bd);
 
   /**
    * \brief Constructor with only dynamics information
@@ -26,8 +27,8 @@ public:
    * \param[in]	Ed	Disturbance matrix
    *
    */
-  CISGenerator(const Eigen::MatrixXd &Ad, const Eigen::MatrixXd &Bd,
-               const Eigen::MatrixXd &Ed);
+  CISGenerator(const int L, const int T, const Eigen::MatrixXd &Ad,
+               const Eigen::MatrixXd &Bd, const Eigen::MatrixXd &Ed);
 
   /// Destructor
   ~CISGenerator();
@@ -35,12 +36,12 @@ public:
   /**
    * \brief Add disturbance information
    *
-   * \param[in]	ds	Disturbance set described as a HPolyhedron
+   * \param[in]	DisturbanceSet	Disturbance set described as a HPolyhedron
    *
    * \return 	void
    *
    */
-  void AddDisturbanceSet(const HPolyhedron &ds);
+  void AddDisturbanceSet(const HPolyhedron &DisturbanceSet);
 
   /**
    * \brief Add input constraints set
@@ -56,8 +57,8 @@ public:
    * \brief Compute the Control Invariant Set
    *
    * \param[in]	SafeSet 	Safe set described as a HPolyhedron
-   * \param[in]	L		Level of Hierarchy
-   * \param[in]	T		Transient before L
+   * \param[in]	L		Period of control policy
+   * \param[in]	T		Transient of control policy
    *
    * \return	Control Invariant Set as a HPolyhedron
    *
@@ -150,7 +151,7 @@ private:
 
   int ExtendedInputDim_;
 
-  int Level_;
+  int Loop_;
   int Transient_;
 
   bool ThereAreInputConstraints_;
@@ -162,7 +163,7 @@ private:
 
   HPolyhedron CIS_;
 
-  Eigen::MatrixXd Ed_BR_;
+  Eigen::MatrixXd Ed_BF_;
 
   Eigen::MatrixXd ExtendedU2U_;
 
@@ -175,11 +176,23 @@ private:
 
   void ComputeLiftedSystem(int L, int T);
 
+  void NewComputeLiftedSystem(int L, int T,
+                              std::vector<Eigen::MatrixXd> &SysMatrices);
+
+  void ComputeExtended(HPolyhedron &SafeSet_BF,
+                       std::vector<Eigen::MatrixXd> &SysMatrices_BF);
+
+  HPolyhedron NewMinkDiff(HPolyhedron &P, HPolyhedron &S);
+
   std::vector<HPolyhedron>
-  ComputeShrinkedSafeSetsSequence(const HPolyhedron &ss);
+  ComputeSafeSetsSequence(const HPolyhedron &SafeSet,
+                          std::vector<Eigen::MatrixXd> &SysMatrices);
 
   void GenerateBrunovksyForm(const Eigen::MatrixXd &A,
                              const Eigen::MatrixXd &B);
+
+  void GenerateBrunovksyForm(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
+                             const Eigen::MatrixXd &E);
 
   bool cis_computed_;
 };

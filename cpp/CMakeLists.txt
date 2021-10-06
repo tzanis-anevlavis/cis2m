@@ -154,6 +154,9 @@ target_link_libraries(hpoly_minkowski_test_2 cis2m)
 add_executable(hpoly_minkowski_test_3 ${test_folder}/test_hpolyhedron_mink3.cc)
 target_link_libraries(hpoly_minkowski_test_3 cis2m)
 
+add_executable(hpoly_minkowski_test_4 ${test_folder}/test_hpolyhedron_mink4.cc)
+target_link_libraries(hpoly_minkowski_test_4 cis2m)
+
 add_executable(cis_test_0 ${test_folder}/test_cisgenerator0.cc)
 target_link_libraries(cis_test_0 cis2m)
 

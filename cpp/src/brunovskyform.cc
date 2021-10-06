@@ -149,7 +149,7 @@ BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd)
       B_cntrl_form_(MatrixXd::Zero(Bd.rows(), Bd.cols())),
       TransformationMatrix_(MatrixXd::Zero(Ad.rows(), Ad.rows())),
       Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
-      Bm_(MatrixXd::Zero(Bd.cols(), Bd.cols())) {
+      Bm_(MatrixXd::Zero(Bd.cols(), Bd.cols())), hasDisturbance_(false) {
 
   // Compute the controllability matrix
   MatrixXd CTRL = ComputeCTRL(Ad, Bd);
@@ -175,19 +175,45 @@ BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd)
   }
 
   // Generate the Brunovksy Forms after Feedback
-  // A_brunovsky_form_ = MatrixXd::Zero(Ad.rows(), Ad.cols());
-  // B_brunovsky_form_ = MatrixXd::Zero(Bd.rows(), Bd.cols());
-  // int start_index = 0;
-  // for (int i = 0; i < controllability_indexes_.size(); ++i) {
-  //   int mu_i = controllability_indexes_[i];
-  //   A_brunovsky_form_.block(start_index, start_index + 1, mu_i - 1, mu_i - 1)
-  //   =
-  //       Eigen::MatrixXd::Identity(mu_i - 1, mu_i - 1);
-  //   B_brunovsky_form_(start_index + mu_i - 1, i) = 1.0;
-  //   start_index += mu_i;
-  // }
-  //
-  // Use the forms:
+  B_brunovsky_form_ = TransformationMatrix_ * Bd * Bm_.inverse();
+  A_brunovsky_form_ =
+      TransformationMatrix_ * Ad * TransformationMatrix_.inverse() -
+      B_brunovsky_form_ * Am_;
+}
+
+BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd,
+                             const MatrixXd &Ed)
+    : A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
+      B_cntrl_form_(MatrixXd::Zero(Bd.rows(), Bd.cols())),
+      TransformationMatrix_(MatrixXd::Zero(Ad.rows(), Ad.rows())),
+      Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
+      Bm_(MatrixXd::Zero(Bd.cols(), Bd.cols())), hasDisturbance_(true) {
+
+  // Compute the controllability matrix
+  MatrixXd CTRL = ComputeCTRL(Ad, Bd);
+
+  // Compute the controllability indexes and the intermediate Cbar matrix
+  std::pair<MatrixXd, std::vector<int>> data =
+      ComputeControllabilityIndexes(CTRL, Bd.cols());
+  MatrixXd Cbar = data.first;
+  controllability_indexes_ = data.second;
+  max_controllability_index_ = *std::max_element(
+      controllability_indexes_.begin(), controllability_indexes_.end());
+  std::vector<int> sigmas = ComputeSigmas(controllability_indexes_);
+
+  TransformationMatrix_ = ComputeTransformation(Ad, Bd, Cbar, sigmas);
+
+  // Compute the controller forms
+  A_cntrl_form_ = TransformationMatrix_ * Ad * TransformationMatrix_.inverse();
+  B_cntrl_form_ = TransformationMatrix_ * Bd;
+
+  for (int i = 0; i < sigmas.size(); i++) {
+    Bm_.row(i) = B_cntrl_form_.row(sigmas[i] - 1);
+    Am_.row(i) = A_cntrl_form_.row(sigmas[i] - 1);
+  }
+
+  // Generate the Brunovksy Forms after Feedback
+  E_brunovsky_form_ = TransformationMatrix_ * Ed;
   B_brunovsky_form_ = TransformationMatrix_ * Bd * Bm_.inverse();
   A_brunovsky_form_ =
       TransformationMatrix_ * Ad * TransformationMatrix_.inverse() -
@@ -196,15 +222,16 @@ BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd)
 
 BrunovskyForm::~BrunovskyForm(){};
 
-std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetDynSystem() {
+std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetSystem() {
   std::pair<MatrixXd, MatrixXd> output(A_brunovsky_form_, B_brunovsky_form_);
   return output;
 }
 
-HPolyhedron BrunovskyForm::GetDynConstraints(const HPolyhedron &DynCnstr) {
-  // Return the HPolyhedron [F, b] F x < b
-  MatrixXd F_state_cnstr = DynCnstr.Ai() * TransformationMatrix_.inverse();
-  VectorXd b_state_cnstr = DynCnstr.bi();
+HPolyhedron BrunovskyForm::GetStateConstraints(const HPolyhedron &StateCnstr) {
+  // Take StateCnstr: G x < F
+  // and return G * TransformationMatrix^-1 x < F
+  MatrixXd F_state_cnstr = StateCnstr.Ai() * TransformationMatrix_.inverse();
+  VectorXd b_state_cnstr = StateCnstr.bi();
 
   return HPolyhedron(F_state_cnstr, b_state_cnstr);
 }
@@ -216,10 +243,13 @@ HPolyhedron BrunovskyForm::GetInputConstraints(const HPolyhedron &InputCnstr) {
   return HPolyhedron(F_input_cnstr, b_input_cnstr);
 }
 
-MatrixXd
-BrunovskyForm::GetDisturbanceMatrix(const MatrixXd &DisturbanceMatrix) {
-  MatrixXd E_cntrl_form = TransformationMatrix_ * DisturbanceMatrix;
-  return E_cntrl_form;
+MatrixXd BrunovskyForm::GetDisturbanceMatrix() {
+  if (hasDisturbance_)
+    return E_brunovsky_form_;
+  else {
+    std::cerr << "Model has no disturbance." << std::endl;
+    return Eigen::MatrixXd::Zero(A_brunovsky_form_.cols(), 1);
+  }
 }
 
 std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetIntermediateMatrixes() {
@@ -238,5 +268,7 @@ std::vector<int> BrunovskyForm::GetControllabilityIndexes() {
 int BrunovskyForm::GetMaxControllabilityIndex() {
   return max_controllability_index_;
 }
+
+bool BrunovskyForm::hasDisturbance() { return hasDisturbance_; }
 
 } // namespace cis2m

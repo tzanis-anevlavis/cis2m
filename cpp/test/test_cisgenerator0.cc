@@ -87,11 +87,11 @@ int main() {
 
   // ==============================================================================================
   // CIS (No disturbance)
-  cis2m::CISGenerator cisg(A, B);
+  cis2m::CISGenerator cisg(2, 0, A, B);
 
   std::cout << "Computing the CIS..." << std::endl;
   // Computing the CIS given a Safe set
-  cisg.computeCIS(SafeSet, 6, 0);
+  cisg.computeCIS(SafeSet, 2, 0);
   cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
 
   // std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols() <<
