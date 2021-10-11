@@ -54,16 +54,16 @@ public:
   void AddInputConstraintsSet(const HPolyhedron &ics);
 
   /**
-   * \brief Compute the Control Invariant Set
+   * \brief Compute the Implicit Control Invariant Set
    *
    * \param[in]	SafeSet 	Safe set described as a HPolyhedron
    * \param[in]	L		Period of control policy
    * \param[in]	T		Transient of control policy
    *
-   * \return	Control Invariant Set as a HPolyhedron
+   * \return	Implicit Control Invariant Set as a HPolyhedron
    *
    */
-  void computeCIS(const HPolyhedron &SafeSet, int L, int T);
+  void computeImplicitCIS(const HPolyhedron &SafeSet, int L, int T);
 
   /**
    * \brief Fetch the state part of the Constraint Coefficients
@@ -137,7 +137,22 @@ public:
    */
   int GetStateDim() const;
 
+  /**
+   * \brief Get the size of the input
+   */
+  int GetInputDim() const;
+
   int GetLevel() const;
+
+  /**
+   * \brief Get the DisturbanceSet_
+   */
+  HPolyhedron GetDisturbanceSet();
+
+  /**
+   * \brief Get the InputCnstrSet_
+   */
+  HPolyhedron GetInputConstraints();
 
   /**
    * \brief Get the Brunovsky Form Transformation Class
@@ -146,10 +161,10 @@ public:
 
 private:
   int StateDim_;
-  int NumberInputs_;
+  int InputDim_;
   int DisturbanceDim_;
 
-  int ExtendedInputDim_;
+  int VirtualInputDim_;
 
   int Loop_;
   int Transient_;
@@ -163,9 +178,9 @@ private:
 
   HPolyhedron CIS_;
 
-  Eigen::MatrixXd Ed_BF_;
-
   Eigen::MatrixXd ExtendedU2U_;
+
+  bool cis_computed_;
 
   /**
    * \brief Reference to the Brunovsky Form Transformation Class
@@ -174,15 +189,10 @@ private:
 
   void Reset();
 
-  void ComputeLiftedSystem(int L, int T);
-
-  void NewComputeLiftedSystem(int L, int T,
-                              std::vector<Eigen::MatrixXd> &SysMatrices);
+  void ComputeLiftedSystem(std::vector<Eigen::MatrixXd> &SysMatrices);
 
   void ComputeExtended(HPolyhedron &SafeSet_BF,
                        std::vector<Eigen::MatrixXd> &SysMatrices_BF);
-
-  HPolyhedron NewMinkDiff(HPolyhedron &P, HPolyhedron &S);
 
   std::vector<HPolyhedron>
   ComputeSafeSetsSequence(const HPolyhedron &SafeSet,
@@ -194,6 +204,6 @@ private:
   void GenerateBrunovksyForm(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
                              const Eigen::MatrixXd &E);
 
-  bool cis_computed_;
+  void TransformToOriginal();
 };
 } // namespace cis2m

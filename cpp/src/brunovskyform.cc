@@ -145,7 +145,7 @@ MatrixXd ComputeCTRL(const MatrixXd &A, const MatrixXd &B) {
 // ============================================================
 // CLASS
 BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd)
-    : A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
+    : Ad_(Ad), Bd_(Bd), A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
       B_cntrl_form_(MatrixXd::Zero(Bd.rows(), Bd.cols())),
       TransformationMatrix_(MatrixXd::Zero(Ad.rows(), Ad.rows())),
       Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
@@ -183,7 +183,8 @@ BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd)
 
 BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd,
                              const MatrixXd &Ed)
-    : A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
+    : Ad_(Ad), Bd_(Bd), Ed_(Ed),
+      A_cntrl_form_(MatrixXd::Zero(Ad.rows(), Ad.cols())),
       B_cntrl_form_(MatrixXd::Zero(Bd.rows(), Bd.cols())),
       TransformationMatrix_(MatrixXd::Zero(Ad.rows(), Ad.rows())),
       Am_(MatrixXd::Zero(Bd.cols(), Ad.cols())),
@@ -222,8 +223,13 @@ BrunovskyForm::BrunovskyForm(const MatrixXd &Ad, const MatrixXd &Bd,
 
 BrunovskyForm::~BrunovskyForm(){};
 
-std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetSystem() {
+std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetBrunovskySystem() {
   std::pair<MatrixXd, MatrixXd> output(A_brunovsky_form_, B_brunovsky_form_);
+  return output;
+}
+
+std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetOriginalSystem() {
+  std::pair<MatrixXd, MatrixXd> output(Ad_, Bd_);
   return output;
 }
 
@@ -252,7 +258,7 @@ MatrixXd BrunovskyForm::GetDisturbanceMatrix() {
   }
 }
 
-std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetIntermediateMatrixes() {
+std::pair<MatrixXd, MatrixXd> BrunovskyForm::GetIntermediateMatrices() {
   std::pair<MatrixXd, MatrixXd> output(Am_, Bm_);
   return output;
 }

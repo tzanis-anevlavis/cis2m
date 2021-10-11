@@ -19,7 +19,12 @@ public:
   /**
    * Get the Brunovsky Form A and B matrices
    */
-  std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetSystem();
+  std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetBrunovskySystem();
+
+  /**
+   * Get the original A and B matrices
+   */
+  std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetOriginalSystem();
 
   /**
    * Transform the dynamics constraints expressed with
@@ -44,7 +49,7 @@ public:
    * A_brunovsky = A_controllable + B_brunovsky * Am
    * B_brunovksy = B_controllable * Bm
    */
-  std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetIntermediateMatrixes();
+  std::pair<Eigen::MatrixXd, Eigen::MatrixXd> GetIntermediateMatrices();
 
   /**
    * Return the controllability indexes
@@ -68,6 +73,11 @@ public:
   bool hasDisturbance();
 
 private:
+  /// System in original space
+  Eigen::MatrixXd Ad_;
+  Eigen::MatrixXd Bd_;
+  Eigen::MatrixXd Ed_;
+
   /// Dynamics A matrix in controllability form
   Eigen::MatrixXd A_cntrl_form_;
 

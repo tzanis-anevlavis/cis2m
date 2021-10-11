@@ -23,7 +23,7 @@ CISGenerator::CISGenerator(const int L, const int T, const MatrixXd &Ad,
   Loop_ = L;
   Transient_ = T;
   StateDim_ = Ad.rows();
-  NumberInputs_ = Bd.cols();
+  InputDim_ = Bd.cols();
   GenerateBrunovksyForm(Ad, Bd);
 }
 
@@ -34,7 +34,7 @@ CISGenerator::CISGenerator(const int L, const int T, const MatrixXd &Ad,
   Loop_ = L;
   Transient_ = T;
   StateDim_ = Ad.rows();
-  NumberInputs_ = Bd.cols();
+  InputDim_ = Bd.cols();
   DisturbanceDim_ = Ed.cols();
 
   GenerateBrunovksyForm(Ad, Bd, Ed);
@@ -47,7 +47,7 @@ void CISGenerator::Reset() {
 
   Loop_ = -1;
   Transient_ = -1;
-  ExtendedInputDim_ = -1;
+  VirtualInputDim_ = -1;
 
   ThereAreInputConstraints_ = false;
 
@@ -72,53 +72,31 @@ void CISGenerator::AddInputConstraintsSet(const HPolyhedron &ics) {
   InputCnstrSet_ = ics;
 }
 
-HPolyhedron CISGenerator::NewMinkDiff(HPolyhedron &P, HPolyhedron &S) {
-  // Returns P - S
-
-  if (P.GetSpaceDim() != S.GetSpaceDim()) {
-    std::cerr << "The polyhedra should have the same dimension" << std::endl;
-    return P;
-  }
-
-  VectorXd supp = S.ComputeSupport(P.Ai());
-
-  MatrixXd tempA(P.Ai().rows() + P.Ai().rows(), P.Ai().cols());
-  tempA << P.Ai(), P.Ai();
-
-  VectorXd tempb(P.bi().rows() + P.bi().rows());
-  tempb << P.bi(), (P.bi() - supp);
-
-  HPolyhedron MinkDiff(tempA, tempb);
-
-  return MinkDiff;
-}
-
 std::vector<HPolyhedron>
 CISGenerator::ComputeSafeSetsSequence(const HPolyhedron &SafeSet,
                                       std::vector<MatrixXd> &SysMatrices) {
   int nmax = brunovsky_form_->GetMaxControllabilityIndex();
-
-  // std::pair<MatrixXd, MatrixXd> pairAB = brunovsky_form_->GetSystem();
-  //   MatrixXd Ad_BF = brunovsky_form_->GetSystem().first;
-  //   HPolyhedron SafeSet_BF = brunovsky_form_->GetStateConstraints(ss);
+  int StateDim = StateDim_;
+  // Now we extend the state when we have input constraints.
+  if (ThereAreInputConstraints_) {
+    StateDim = StateDim_ + InputDim_;
+    nmax += 1;
+  } else {
+    StateDim = StateDim_;
+  }
 
   std::vector<HPolyhedron> SafeSet_seq;
   SafeSet_seq.push_back(SafeSet);
   if (brunovsky_form_->hasDisturbance()) {
-    MatrixXd A_curr = MatrixXd::Identity(StateDim_, StateDim_);
+    MatrixXd A_curr = MatrixXd::Identity(StateDim, StateDim);
     for (int i = 1; i < nmax + Transient_ + Loop_; i++) {
-      if (i <= nmax) {
+      if (i < nmax) {
         HPolyhedron Sub(DisturbanceSet_.affineT(A_curr * SysMatrices[2]));
-        // SafeSet_seq.push_back(SafeSet_seq[i - 1] - Sub);
-        HPolyhedron Diff = SafeSet_seq[i - 1] - Sub;
-        // HPolyhedron Diff = NewMinkDiff(SafeSet_seq[i - 1], Sub);
-        SafeSet_seq.push_back(Diff);
+        SafeSet_seq.push_back(SafeSet_seq.back() - Sub);
         A_curr *= SysMatrices[0];
 
-        std::cout << i << " - A: " << std::endl << Sub.Ai() << std::endl;
-        std::cout << "b: " << std::endl << Sub.bi() << std::endl;
       } else {
-        SafeSet_seq.push_back(SafeSet_seq[nmax]);
+        SafeSet_seq.push_back(SafeSet_seq.back());
       }
     }
   } else {
@@ -144,79 +122,38 @@ CISGenerator::ComputeSafeSetsSequence(const HPolyhedron &SafeSet,
   return SafeSet_seq;
 }
 
-void CISGenerator::ComputeLiftedSystem(int L, int T) {
-  // Update the parameters
-  Loop_ = L;
-  Transient_ = T;
-  int length = Transient_ + Loop_;
-  ExtendedInputDim_ = length * NumberInputs_;
+void CISGenerator::ComputeLiftedSystem(std::vector<MatrixXd> &SysMatrices) {
+  int Level = Transient_ + Loop_;
+  VirtualInputDim_ = Level * InputDim_;
 
-  // Construct the High-Dimensional system
-  MatrixXd Ki(MatrixXd::Zero(1, length));
+  int StateDim = StateDim_;
+  // Now we extend the state when we have input constraints.
+  if (ThereAreInputConstraints_) {
+    StateDim = StateDim_ + InputDim_;
+  } else {
+    StateDim = StateDim_;
+  }
+
+  // Construct the High-Dimensional system:
+  // A_lifted_ =
+  //      [A    B * K]
+  //      [0      P  ]
+  MatrixXd Ki(MatrixXd::Zero(1, Level));
   Ki(0) = 1.0;
-  MatrixXd Pi(MatrixXd::Zero(length, length));
-  Pi.block(0, 1, length - 1, length - 1) =
-      MatrixXd::Identity(length - 1, length - 1);
-  Pi(length - 1, Transient_) = 1.0;
-  ExtendedU2U_ = blkdiag(Ki, NumberInputs_);
-  MatrixXd P = blkdiag(Pi, NumberInputs_);
+  MatrixXd Pi(MatrixXd::Zero(Level, Level));
+  Pi.block(0, 1, Level - 1, Level - 1) =
+      MatrixXd::Identity(Level - 1, Level - 1);
+  Pi(Level - 1, Transient_) = 1.0;
+  ExtendedU2U_ = blkdiag(Ki, InputDim_);
+  MatrixXd P = blkdiag(Pi, InputDim_);
 
-  std::pair<MatrixXd, MatrixXd> pairAB = brunovsky_form_->GetSystem();
-  MatrixXd Ad_BF = pairAB.first;
-  MatrixXd Bd_BF = pairAB.second;
-
-  int Nrow_hd = StateDim_ + ExtendedInputDim_;
-  int Ncol_hd = StateDim_ + P.cols();
+  int Nrow_hd = StateDim + VirtualInputDim_;
+  int Ncol_hd = StateDim + P.cols();
   MatrixXd Ahd(MatrixXd::Zero(Nrow_hd, Ncol_hd));
-  Ahd.block(0, 0, StateDim_, StateDim_) = Ad_BF;
-  Ahd.block(0, StateDim_, StateDim_, ExtendedU2U_.cols()) =
-      Bd_BF * ExtendedU2U_;
-  Ahd.block(StateDim_, StateDim_, P.rows(), P.cols()) = P;
-
-  A_lifted_ = Ahd;
-#ifdef CIS2M_DEBUG
-  std::cout << __FILE__ << std::endl;
-  std::cout << "Computation of Lifted System" << std::endl;
-  std::cout << "A_BF: " << std::endl << Ad_BF << std::endl;
-  std::cout << "B_BF: " << std::endl << Bd_BF << std::endl;
-  std::cout << "A_lifted: " << std::endl << Ahd << std::endl;
-  std::cout << "A_lifted Size: " << Ahd.rows() << " x " << Ahd.cols()
-            << std::endl;
-  std::cout << std::endl;
-#endif
-}
-
-void CISGenerator::NewComputeLiftedSystem(int L, int T,
-                                          std::vector<MatrixXd> &SysMatrices) {
-  // Update the parameters
-  Loop_ = L;
-  Transient_ = T;
-  int length = Transient_ + Loop_;
-  ExtendedInputDim_ = length * NumberInputs_;
-
-  // Construct the High-Dimensional system
-  MatrixXd Ki(MatrixXd::Zero(1, length));
-  Ki(0) = 1.0;
-  MatrixXd Pi(MatrixXd::Zero(length, length));
-  Pi.block(0, 1, length - 1, length - 1) =
-      MatrixXd::Identity(length - 1, length - 1);
-  Pi(length - 1, Transient_) = 1.0;
-  ExtendedU2U_ = blkdiag(Ki, NumberInputs_);
-  MatrixXd P = blkdiag(Pi, NumberInputs_);
-
-  //   std::pair<MatrixXd, MatrixXd> pairAB = brunovsky_form_->GetSystem();
-  //   MatrixXd Ad_BF = pairAB.first;
-  //   MatrixXd Bd_BF = pairAB.second;
-  MatrixXd Ad_BF = SysMatrices[0];
-  MatrixXd Bd_BF = SysMatrices[1];
-
-  int Nrow_hd = StateDim_ + ExtendedInputDim_;
-  int Ncol_hd = StateDim_ + P.cols();
-  MatrixXd Ahd(MatrixXd::Zero(Nrow_hd, Ncol_hd));
-  Ahd.block(0, 0, StateDim_, StateDim_) = Ad_BF;
-  Ahd.block(0, StateDim_, StateDim_, ExtendedU2U_.cols()) =
-      Bd_BF * ExtendedU2U_;
-  Ahd.block(StateDim_, StateDim_, P.rows(), P.cols()) = P;
+  Ahd.block(0, 0, StateDim, StateDim) = SysMatrices[0];
+  Ahd.block(0, StateDim, StateDim, ExtendedU2U_.cols()) =
+      SysMatrices[1] * ExtendedU2U_;
+  Ahd.block(StateDim, StateDim, P.rows(), P.cols()) = P;
 
   A_lifted_ = Ahd;
 #ifdef CIS2M_DEBUG
@@ -246,15 +183,13 @@ void CISGenerator::ComputeExtended(HPolyhedron &SafeSet_BF,
                                   SysMatrices_BF[1].cols()),
       MatrixXd::Identity(SysMatrices_BF[1].cols(), SysMatrices_BF[1].cols());
 
-  std::cout << std::endl << "Gotcha" << std::endl;
-
-  if (SysMatrices_BF.size() == 3) {
+  if (brunovsky_form_->hasDisturbance()) {
     MatrixXd E_BF_extended(SysMatrices_BF[2].rows() + SysMatrices_BF[1].cols(),
                            SysMatrices_BF[2].cols());
     E_BF_extended << SysMatrices_BF[2],
-        MatrixXd::Zero(SysMatrices_BF[1].cols(), SysMatrices_BF[2].cols()),
+        MatrixXd::Zero(SysMatrices_BF[1].cols(), SysMatrices_BF[2].cols());
 
-        SysMatrices_BF[2] = E_BF_extended;
+    SysMatrices_BF[2] = E_BF_extended;
   }
   SysMatrices_BF[1] = B_BF_extended;
   SysMatrices_BF[0] = A_BF_extended;
@@ -262,10 +197,16 @@ void CISGenerator::ComputeExtended(HPolyhedron &SafeSet_BF,
   // Compute the extended safe set
   MatrixXd Gxu(SafeSet_BF.Ai().rows() + InputCnstrSet_.Ai().rows(),
                SafeSet_BF.Ai().cols() + InputCnstrSet_.Ai().cols());
+
+  std::pair<MatrixXd, MatrixXd> AmBm =
+      brunovsky_form_->GetIntermediateMatrices();
+  MatrixXd FeedbackConstraints(InputCnstrSet_.Ai().cols(),
+                               AmBm.first.cols() + AmBm.second.cols());
+  FeedbackConstraints << -AmBm.second.inverse() * AmBm.first, AmBm.second;
+
   Gxu << SafeSet_BF.Ai(),
       MatrixXd::Zero(SafeSet_BF.Ai().rows(), InputCnstrSet_.Ai().cols()),
-      InputCnstrSet_.Ai();
-  //   Ge = [Gc sparse(size(Gc, 1), size(Gu, 2)); Gu * alpha_e];
+      InputCnstrSet_.Ai() * FeedbackConstraints;
   MatrixXd Fxu(SafeSet_BF.Ai().rows() + InputCnstrSet_.Ai().rows(), 1);
   Fxu << SafeSet_BF.bi(), InputCnstrSet_.bi();
 
@@ -273,83 +214,158 @@ void CISGenerator::ComputeExtended(HPolyhedron &SafeSet_BF,
   SafeSet_BF = SafeSet_BF_extended;
 }
 
-void CISGenerator::computeCIS(const HPolyhedron &SafeSet, int L, int T) {
-  //   if (Loop_ != L || Transient_ != T)
-  //     ComputeLiftedSystem(L, T);
+void CISGenerator::TransformToOriginal() {
+  MatrixXd Ai_OG(CIS_.GetNumInequalities(), CIS_.GetSpaceDim());
+  if (ThereAreInputConstraints_) {
+    // Transform CIS_ to original space:
+    Ai_OG << Fetch_A_State() * brunovsky_form_->GetTransformationMatrix() +
+                 Fetch_A_Input() *
+                     brunovsky_form_->GetIntermediateMatrices().first *
+                     brunovsky_form_->GetTransformationMatrix(),
+        Fetch_A_Input() * brunovsky_form_->GetIntermediateMatrices().second,
+        Fetch_A_Virtual();
 
-  // Constructor has generated the Brunovsky form.
+    // Construct A_lifted_ in original space:
+    // A_lifted_ =
+    //      [A                     B 0_{StateDim_,VirtualInputDim_}]
+    //      [0_{InputDim_,StateDim_+InputDim_}          K ]
+    //      [0_{VirtualInputDim_,StateDim_+InputDim_}   P ]
+
+    int Level = Transient_ + Loop_;
+    MatrixXd Ki(MatrixXd::Zero(1, Level));
+    Ki(0) = 1.0;
+    MatrixXd Pi(MatrixXd::Zero(Level, Level));
+    Pi.block(0, 1, Level - 1, Level - 1) =
+        MatrixXd::Identity(Level - 1, Level - 1);
+    Pi(Level - 1, Transient_) = 1.0;
+    ExtendedU2U_ = blkdiag(Ki, InputDim_);
+    MatrixXd P = blkdiag(Pi, InputDim_);
+
+    int LiftedDim = StateDim_ + InputDim_ + VirtualInputDim_;
+    std::cout << std::endl << "LiftDim: " << LiftedDim << std::endl;
+    MatrixXd Ahd(MatrixXd::Zero(LiftedDim, LiftedDim));
+    Ahd.block(0, 0, StateDim_, StateDim_) =
+        brunovsky_form_->GetOriginalSystem().first;
+    Ahd.block(0, StateDim_, StateDim_, InputDim_) =
+        brunovsky_form_->GetOriginalSystem().second;
+    Ahd.block(StateDim_, StateDim_ + InputDim_, ExtendedU2U_.rows(),
+              ExtendedU2U_.cols()) = ExtendedU2U_;
+    Ahd.block(StateDim_ + InputDim_, StateDim_ + InputDim_, P.rows(),
+              P.cols()) = P;
+
+    A_lifted_ = Ahd;
+  } else {
+    // Transform CIS_ to original space:
+    Ai_OG << Fetch_A_State() * brunovsky_form_->GetTransformationMatrix(),
+        Fetch_A_Input(), Fetch_A_Virtual();
+
+    // Construct A_lifted_ in original space:
+    // A_lifted_ =
+    //      [A    B * K]
+    //      [0      P  ]
+    int Level = Transient_ + Loop_;
+    MatrixXd Ki(MatrixXd::Zero(1, Level));
+    Ki(0) = 1.0;
+    MatrixXd Pi(MatrixXd::Zero(Level, Level));
+    Pi.block(0, 1, Level - 1, Level - 1) =
+        MatrixXd::Identity(Level - 1, Level - 1);
+    Pi(Level - 1, Transient_) = 1.0;
+    ExtendedU2U_ = blkdiag(Ki, InputDim_);
+    MatrixXd P = blkdiag(Pi, InputDim_);
+
+    int Nrow_hd = StateDim_ + VirtualInputDim_;
+    int Ncol_hd = StateDim_ + P.cols();
+    MatrixXd Ahd(MatrixXd::Zero(Nrow_hd, Ncol_hd));
+    Ahd.block(0, 0, StateDim_, StateDim_) =
+        brunovsky_form_->GetOriginalSystem().first;
+    Ahd.block(0, StateDim_, StateDim_, ExtendedU2U_.cols()) =
+        brunovsky_form_->GetOriginalSystem().second * ExtendedU2U_;
+    Ahd.block(StateDim_, StateDim_, P.rows(), P.cols()) = P;
+
+    A_lifted_ = Ahd;
+  }
+
+  CIS_ = HPolyhedron(Ai_OG, CIS_.bi());
+}
+
+void CISGenerator::computeImplicitCIS(const HPolyhedron &SafeSet, int L,
+                                      int T) {
+
+  // Constructor has generated the Brunovsky Form (BF).
+  // Get the system matrices in BF:
   std::vector<MatrixXd> SysMatrices_BF;
-  SysMatrices_BF.push_back(brunovsky_form_->GetSystem().first);
-  SysMatrices_BF.push_back(brunovsky_form_->GetSystem().second);
+  SysMatrices_BF.push_back(brunovsky_form_->GetBrunovskySystem().first);
+  SysMatrices_BF.push_back(brunovsky_form_->GetBrunovskySystem().second);
   if (brunovsky_form_->hasDisturbance())
     SysMatrices_BF.push_back(brunovsky_form_->GetDisturbanceMatrix());
-
+  // and the safe set in BF:
   HPolyhedron SafeSet_BF = brunovsky_form_->GetStateConstraints(SafeSet);
 
   // Extend the system if there are input constraints:
   if (ThereAreInputConstraints_)
     ComputeExtended(SafeSet_BF, SysMatrices_BF);
 
-  // Compute the shrinked Free Space
+  // Compute the safe set sequence:
   std::vector<HPolyhedron> SafeSetSeq =
       ComputeSafeSetsSequence(SafeSet_BF, SysMatrices_BF);
 
-  // Compute the lifted system
-  NewComputeLiftedSystem(L, T, SysMatrices_BF);
+  // Compute the lifted system:
+  ComputeLiftedSystem(SysMatrices_BF);
 
-  //   // // OLD CODE:
-  //   int NStateConstr = SafeSet_BF.Ai().rows();
-  //   int length = Loop_ + Transient_;
-  //   int mu_max = brunovsky_form_->GetMaxControllabilityIndex();
-  //   // Compute the mcisA; mcisB matrixes
-  //   int mcisA_rows = NStateConstr * (mu_max + length);
-  //   int mcisA_cols = StateDim_ + ExtendedInputDim_;
-  //   MatrixXd mcisA(MatrixXd::Zero(mcisA_rows, mcisA_cols));
-  //   VectorXd mcisb(VectorXd::Zero(mcisA_rows));
-  // #ifdef CIS2M_DEBUG
-  //   std::cout << " mcisA: " << mcisA_rows << " x " << mcisA_cols <<
-  //   std::endl;
-  // #endif
-  //   mcisA.block(0, 0, NStateConstr, StateDim_) = SafeSet_BF.Ai();
-  //   mcisb.head(NStateConstr) = SafeSet_BF.bi();
-  //   MatrixXd Acurr = A_lifted_;
-  //   MatrixXd TempA(MatrixXd::Zero(NStateConstr, mcisA_cols));
-  //   MatrixXd mcisA_ctrl;
-  //   VectorXd mcisb_ctrl;
-  //   MatrixXd AA;
-  //   MatrixXd BB;
-  //   HPolyhedron FGu;
+  int NStateConstr = SafeSet_BF.Ai().rows();
+  int Level = Loop_ + Transient_;
+  int nmax = brunovsky_form_->GetMaxControllabilityIndex();
+  if (ThereAreInputConstraints_) {
+    nmax += 1;
+  }
+  // Compute the mcisA; mcisB matrixes
+  int mcisA_rows = NStateConstr * (nmax + Level);
+  int mcisA_cols = SysMatrices_BF[0].cols() + VirtualInputDim_;
+  MatrixXd mcisA(MatrixXd::Zero(mcisA_rows, mcisA_cols));
+  VectorXd mcisb(VectorXd::Zero(mcisA_rows));
+#ifdef CIS2M_DEBUG
+  std::cout << " mcisA: " << mcisA_rows << " x " << mcisA_cols << std::endl;
+#endif
+  mcisA.block(0, 0, NStateConstr, SysMatrices_BF[0].cols()) = SafeSet_BF.Ai();
+  mcisb.head(NStateConstr) = SafeSet_BF.bi();
+  MatrixXd Acurr = A_lifted_;
+  MatrixXd TempA(MatrixXd::Zero(NStateConstr, mcisA_cols));
+  MatrixXd mcisA_ctrl;
+  VectorXd mcisb_ctrl;
+  MatrixXd AA;
+  MatrixXd BB;
+  HPolyhedron FGu;
+
   //   if (ThereAreInputConstraints_) {
   //     FGu = brunovsky_form_->GetInputConstraints(InputCnstrSet_);
-  //     mcisA_ctrl = MatrixXd::Zero(ExtendedInputDim_, mcisA_cols);
-  //     mcisb_ctrl = VectorXd::Zero(ExtendedInputDim_);
+  //     mcisA_ctrl = MatrixXd::Zero(VirtualInputDim_, mcisA_cols);
+  //     mcisb_ctrl = VectorXd::Zero(VirtualInputDim_);
   //     std::pair<MatrixXd, MatrixXd> AmBm =
-  //         brunovsky_form_->GetIntermediateMatrixes();
-  //     AA = -FGu.Ai() * AmBm.first;
-  //     BB = FGu.Ai() * ExtendedU2U_;
-  //     mcisA_ctrl.block(0, 0, NumberInputs_, StateDim_) = AA;
-  //     mcisA_ctrl.block(0, StateDim_, NumberInputs_, mcisA_cols - StateDim_) =
-  //     BB; mcisb_ctrl.head(NumberInputs_) = FGu.bi();
+  //     brunovsky_form_->GetIntermediateMatrices(); AA = -FGu.Ai() *
+  //     AmBm.first; BB = FGu.Ai() * ExtendedU2U_; mcisA_ctrl.block(0, 0,
+  //     InputDim_, StateDim_) = AA; mcisA_ctrl.block(0, StateDim_, InputDim_,
+  //     mcisA_cols - StateDim_) = BB; mcisb_ctrl.head(InputDim_) = FGu.bi();
   //   }
-  //   for (int t = 1; t < mu_max + length; t++) {
-  //     int tbar = t < SafeSetSeq.size() ? t : SafeSetSeq.size() - 1;
-  //     TempA.leftCols(StateDim_) = SafeSetSeq[tbar].Ai();
-  //     mcisA.block(NStateConstr * t, 0, NStateConstr, mcisA_cols) = TempA *
-  //     Acurr; mcisb.segment(NStateConstr * t, NStateConstr) =
-  //     SafeSetSeq[tbar].bi(); if (ThereAreInputConstraints_) {
-  //       if (t < length) {
-  //         mcisA_ctrl.block(t * NumberInputs_, 0, NumberInputs_, StateDim_) =
-  //         AA; mcisA_ctrl.block(t * NumberInputs_, StateDim_, NumberInputs_,
-  //                          mcisA_cols - StateDim_) =
-  //             BB * Acurr.block(StateDim_, StateDim_, ExtendedInputDim_,
-  //                              ExtendedInputDim_);
-  //         mcisb_ctrl.segment(t * NumberInputs_, NumberInputs_) = FGu.bi();
-  //       }
-  //     }
-  //     Acurr *= A_lifted_;
-  //   }
-  //   MatrixXd mcisA_tot(mcisA.rows() + mcisA_ctrl.rows(), mcisA.cols());
-  //   VectorXd mcisb_tot(mcisA_tot.rows());
+
+  for (int t = 1; t < nmax + Level; t++) {
+    int tbar = t < SafeSetSeq.size() ? t : SafeSetSeq.size() - 1;
+    TempA.leftCols(SysMatrices_BF[0].cols()) = SafeSetSeq[tbar].Ai();
+    mcisA.block(NStateConstr * t, 0, NStateConstr, mcisA_cols) = TempA * Acurr;
+    mcisb.segment(NStateConstr * t, NStateConstr) = SafeSetSeq[tbar].bi();
+    // if (ThereAreInputConstraints_) {
+    //   if (t < Level) {
+    //     mcisA_ctrl.block(t * InputDim_, 0, InputDim_, StateDim_) =
+    //     AA; mcisA_ctrl.block(t * InputDim_, StateDim_, InputDim_,
+    //                      mcisA_cols - StateDim_) =
+    //         BB * Acurr.block(StateDim_, StateDim_, VirtualInputDim_,
+    //                          VirtualInputDim_);
+    //     mcisb_ctrl.segment(t * InputDim_, InputDim_) = FGu.bi();
+    //   }
+    // }
+    Acurr *= A_lifted_;
+  }
+  MatrixXd mcisA_tot(mcisA.rows() + mcisA_ctrl.rows(), mcisA.cols());
+  VectorXd mcisb_tot(mcisA_tot.rows());
   //   if (ThereAreInputConstraints_) {
   //     mcisA_tot << mcisA, mcisA_ctrl;
   //     mcisb_tot << mcisb, mcisb_ctrl;
@@ -357,48 +373,20 @@ void CISGenerator::computeCIS(const HPolyhedron &SafeSet, int L, int T) {
   //     mcisA_tot << mcisA;
   //     mcisb_tot << mcisb;
   //   }
-  // Get the transformation
-  //   MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
-  //   mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) =
-  //       mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) * Transform;
-  //   // Note: The CIS is expressed in the original basis
+  mcisA_tot << mcisA;
+  mcisb_tot << mcisb;
 
-  // // NEW CODE:
-  MatrixXd A_curr = A_lifted_;
-  int nmax = brunovsky_form_->GetMaxControllabilityIndex();
-  int space_dim = A_lifted_.cols();
-  int totalConstraintNum = 0;
-  for (int i = 0; i < SafeSetSeq.size(); i++) {
-    HPolyhedron set = SafeSetSeq[i];
-    totalConstraintNum += set.GetNumInequalities();
-  }
-  MatrixXd mcisA_tot(totalConstraintNum, space_dim);
-  VectorXd mcisb_tot(totalConstraintNum, 1);
-  for (int i = 0; i < nmax + Transient_ + Loop_; i++) {
-    int runningIdx = 0;
-    MatrixXd tempAi(SafeSetSeq[i].GetNumInequalities(), space_dim);
-    tempAi << SafeSetSeq[i].Ai(),
-        MatrixXd::Zero(SafeSetSeq[i].GetNumInequalities(),
-                       space_dim - SafeSetSeq[0].GetSpaceDim());
-    if (i == 0) {
-      mcisA_tot.block(runningIdx, 0, SafeSetSeq[0].GetNumInequalities(),
-                      space_dim)
-          << tempAi;
-      mcisb_tot.block(runningIdx, 0, SafeSetSeq[0].GetNumInequalities(), 1)
-          << SafeSetSeq[0].bi();
-    } else {
-      runningIdx += SafeSetSeq[i - 1].GetNumInequalities();
-      mcisA_tot.block(runningIdx, 0, SafeSetSeq[i].GetNumInequalities(),
-                      space_dim)
-          << tempAi * A_curr;
-      mcisb_tot.block(runningIdx, 0, SafeSetSeq[i].GetNumInequalities(), 1)
-          << SafeSetSeq[i].bi();
-    }
-    A_curr *= A_lifted_;
-  }
+  // // Get the transformation
+  // //   MatrixXd Transform = brunovsky_form_->GetTransformationMatrix();
+  // //   mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) =
+  // //       mcisA_tot.block(0, 0, mcisA_tot.rows(), StateDim_) * Transform;
+  //   // Note: The CIS is expressed in the original basis
 
   CIS_ = HPolyhedron(mcisA_tot, mcisb_tot);
   cis_computed_ = true;
+
+  // Transform CIS_ and A_lifted_ from BF to original space:
+  // TransformToOriginal();
 
 #ifdef CIS2M_DEBUG
   std::cout << __FILE__ << std::endl;
@@ -431,7 +419,7 @@ MatrixXd CISGenerator::Fetch_A_State() {
 MatrixXd CISGenerator::Fetch_A_Input() {
   if (cis_computed_) {
     int NumRows = CIS_.Ai().rows();
-    return CIS_.Ai().block(0, StateDim_, NumRows, NumberInputs_);
+    return CIS_.Ai().block(0, StateDim_, NumRows, InputDim_);
   } else {
     return {};
   }
@@ -440,7 +428,8 @@ MatrixXd CISGenerator::Fetch_A_Input() {
 MatrixXd CISGenerator::Fetch_A_Virtual() {
   if (cis_computed_) {
     int NumCols = CIS_.Ai().cols();
-    return CIS_.Ai().rightCols(NumCols - (NumberInputs_ + StateDim_));
+    // return CIS_.Ai().rightCols(NumCols - (InputDim_ + StateDim_));
+    return CIS_.Ai().rightCols(NumCols - VirtualInputDim_);
   } else {
     return {};
   }
@@ -449,24 +438,35 @@ MatrixXd CISGenerator::Fetch_A_Virtual() {
 MatrixXd CISGenerator::Fetch_A_lifted() { return A_lifted_; }
 
 VectorXd CISGenerator::TransformU2B(const VectorXd &u, const VectorXd &x) {
+  // The transformation from original coordinates (x,u) to Brunovsky coordinates
+  // (z,v) is: x = inv(T) * z, u = -inv(Bm) * Am * T * x + inv(Bm) * v then: v =
+  // Am * T * x + Bm * u.
   MatrixXd T = brunovsky_form_->GetTransformationMatrix();
   std::pair<MatrixXd, MatrixXd> AmBm =
-      brunovsky_form_->GetIntermediateMatrixes();
+      brunovsky_form_->GetIntermediateMatrices();
   return AmBm.second * u + AmBm.first * T * x;
 }
 
-VectorXd CISGenerator::TransformU2O(const VectorXd &u, const VectorXd &x) {
+VectorXd CISGenerator::TransformU2O(const VectorXd &v, const VectorXd &x) {
+  // The transformation from original coordinates (x,u) to Brunovsky coordinates
+  // (z,v) is: x = inv(T) * z, u = -inv(Bm) * Am * T * x + inv(Bm) * v
   MatrixXd T = brunovsky_form_->GetTransformationMatrix();
   std::pair<MatrixXd, MatrixXd> AmBm =
-      brunovsky_form_->GetIntermediateMatrixes();
+      brunovsky_form_->GetIntermediateMatrices();
   return AmBm.second.inverse() * (u - AmBm.first * T * x);
 }
 
-int CISGenerator::GetExtendedDim() const { return NumberInputs_ * Loop_; }
+int CISGenerator::GetExtendedDim() const { return VirtualInputDim_; }
 
 int CISGenerator::GetStateDim() const { return StateDim_; }
 
+int CISGenerator::GetInputDim() const { return InputDim_; }
+
 int CISGenerator::GetLevel() const { return Loop_; }
+
+HPolyhedron CISGenerator::GetDisturbanceSet() { return DisturbanceSet_; }
+
+HPolyhedron CISGenerator::GetInputConstraints() { return InputCnstrSet_; }
 
 BrunovskyForm *CISGenerator::getBrunovskyForm() { return brunovsky_form_; }
 } // namespace cis2m

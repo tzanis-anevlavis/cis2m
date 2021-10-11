@@ -15,6 +15,7 @@ namespace cis2m {
 HPolyhedron::HPolyhedron() {
   SpaceDim_ = 0;
   NumIneqs_ = 0;
+  NumEqs_ = 0;
   valid_ = false;
 }
 
@@ -24,14 +25,22 @@ HPolyhedron::HPolyhedron(const Eigen::MatrixXd &A, const Eigen::VectorXd &b)
     : Ai_(A), bi_(b) {
   SpaceDim_ = Ai_.cols();
   NumIneqs_ = Ai_.rows();
+  NumEqs_ = 0;
   valid_ = true;
 }
 
 HPolyhedron::HPolyhedron(const Eigen::MatrixXd &Ai, const Eigen::VectorXd &bi,
                          const Eigen::MatrixXd &Ae, const Eigen::VectorXd &be)
     : Ai_(Ai), bi_(bi), Ae_(Ae), be_(be) {
+
+  if (Ai_.cols() != Ae_.cols()) {
+    std::cerr
+        << "Matrices 'Ai_' and 'Ae_' must have the same number of columns."
+        << std::endl;
+  }
   SpaceDim_ = Ai_.cols();
   NumIneqs_ = Ai_.rows();
+  NumEqs_ = Ae_.rows();
   valid_ = true;
 }
 
@@ -44,22 +53,22 @@ bool HPolyhedron::isEmpty() const {
   }
 
   // Select solver
-  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GUROBI"));
   if (!solver) {
     LOG(WARNING) << "Solver unavailable.";
     return true;
   }
   solver->Clear();
+  // Set silent
+  solver->SuppressOutput();
 
   const double infinity = solver->infinity();
   // Create the X variable
-  LOG(INFO) << "Number of variables = " << SpaceDim_;
   int NumVars = SpaceDim_;
   std::vector<MPVariable *> x(NumVars);
   for (int i = 0; i < NumVars; i++) {
-    x[i] = solver->MakeNumVar(-100000.0, 100000.0, "");
+    x[i] = solver->MakeNumVar(-infinity, infinity, "");
   }
-  LOG(INFO) << "Number of variables = " << solver->NumVariables();
 
   // Create the inequalities constraints
   for (int i = 0; i < NumIneqs_; i++) {
@@ -71,34 +80,32 @@ bool HPolyhedron::isEmpty() const {
 
   // Define the objective
   MPObjective *const obj = solver->MutableObjective();
-  // VectorXd cost_coeff = VectorXd::Zero(NumVars);
   for (int j = 0; j < NumVars; j++) {
-    // obj->SetCoefficient(x[j], cost_coeff(j));
     obj->SetCoefficient(x[j], 0);
   }
   obj->SetMinimization();
 
   const MPSolver::ResultStatus result_status = solver->Solve();
-  LOG(INFO) << "Solution status: " << result_status;
-
   if (result_status == MPSolver::INFEASIBLE) {
     return true;
+  } else if (result_status == MPSolver::OPTIMAL) {
+    return false;
   } else {
+    // Catch if we get something unbounded or abnormal.
+    LOG(INFO) << "Solution status: " << result_status;
     LOG(INFO) << "Optimal objective value = " << obj->Value();
-    // LOG(INFO) << "Solution:";
-    // for (int j = 0; j < NumVars; j++) {
-    //   LOG(INFO) << x[j]->solution_value();
-    // }
-
+    LOG(INFO) << "Solution:";
+    for (int j = 0; j < NumVars; j++) {
+      LOG(INFO) << x[j]->solution_value();
+    }
     return false;
   }
 }
 
 // Check if HPolyhedron contains another HPolyhedron
-bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
+bool HPolyhedron::Contains(const HPolyhedron &P) const {
 
-  int YSpaceDim = Y.GetSpaceDim();
-  if (SpaceDim_ != YSpaceDim) {
+  if (SpaceDim_ != P.SpaceDim_) {
     std::cerr << "The HPolyhedron objects have different dimensions!"
               << std::endl;
     return false;
@@ -107,37 +114,36 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
     std::cerr << "Calling a method on a empty HPolyhedron!" << std::endl;
     return true;
   }
-  if (Y.isEmpty()) {
+  if (P.isEmpty()) {
     std::cout << "HPolyhedron is empty and, hence, trivially contained."
               << std::endl;
     return true;
   }
 
-  // If the HPolyhedron contains Y, then maximizing the left-hand side of
-  // all inequalities of the HPolyhedron, when constrained in Y, still satisfies
+  // If the HPolyhedron contains P, then maximizing the left-hand side of
+  // all inequalities of the HPolyhedron, when constrained in P, still satisfies
   // the right-hand side of the inequalities.
 
   // Select solver
-  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GUROBI"));
   if (!solver) {
     LOG(WARNING) << "Solver unavailable.";
     return true;
   }
   solver->Clear();
+  // Set silent
+  solver->SuppressOutput();
 
   const double infinity = solver->infinity();
   // Create the X variable
-  LOG(INFO) << "Number of variables = " << SpaceDim_;
   int NumVars = SpaceDim_;
   std::vector<MPVariable *> x(NumVars);
   for (int i = 0; i < NumVars; i++) {
-    x[i] = solver->MakeNumVar(-100000.0, 100000.0, "");
+    x[i] = solver->MakeNumVar(-infinity, infinity, "");
   }
-  LOG(INFO) << "Number of variables = " << solver->NumVariables();
-
-  // Create the inequality constraints: x \in Y
-  Eigen::MatrixXd Y_Ai = Y.Ai();
-  Eigen::VectorXd Y_bi = Y.bi();
+  // Create the inequality constraints: x \in P
+  Eigen::MatrixXd Y_Ai = P.Ai();
+  Eigen::VectorXd Y_bi = P.bi();
   for (int i = 0; i < NumIneqs_; i++) {
     MPConstraint *con = solver->MakeRowConstraint(-infinity, Y_bi(i));
     for (int j = 0; j < NumVars; j++) {
@@ -147,6 +153,7 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
 
   // Define the objective: each inequality in the HPolyhedron
   MPObjective *const obj = solver->MutableObjective();
+  bool viol = false;
   for (int i = 0; i < NumIneqs_; i++) {
     for (int j = 0; j < NumVars; j++) {
       obj->SetCoefficient(x[j], Ai_(i, j));
@@ -154,20 +161,27 @@ bool HPolyhedron::ContainsPoly(HPolyhedron &Y) const {
     obj->SetMaximization();
 
     const MPSolver::ResultStatus result_status = solver->Solve();
-    LOG(INFO) << "Inequality: " << i << " - Solution status: " << result_status;
     if (result_status == MPSolver::INFEASIBLE) {
+      LOG(INFO) << "Inequality: " << i
+                << " - Solution status: " << result_status;
       return false;
     }
     // If the maximization value exceed the right-hand side value of the
     // inequality, then return false.
     if (obj->Value() > bi_(i) + 1e-6) {
+      LOG(INFO) << "Inequality: " << i
+                << " - Solution status: " << result_status;
       std::cout << "obj->Value: " << obj->Value() << " > bi_(i): " << bi_(i)
                 << std::endl;
-      return false;
+      viol = true;
     }
   }
-
-  return true;
+  // Return here so that we see all the violated inequalities.
+  if (viol) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 // Check if HPolyhedron contains a point
@@ -198,7 +212,7 @@ bool HPolyhedron::Contains(const Eigen::VectorXd &point) const {
   return output;
 }
 
-// Check if HPolyhedron is (Controlled or Positively) Invariant
+// Check if HPolyhedron is (Robustly) Positively Invariant
 bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
 
   // Argument checks
@@ -206,9 +220,9 @@ bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
     std::cerr << "Matrix 'A' must be square." << std::endl;
     return false;
   }
-  if (A.rows() != Ai_.cols()) {
+  if (A.cols() != SpaceDim_) {
     std::cerr
-        << "Matrix 'A' rows must be the same as the HPolyhedron's dimension."
+        << "Matrix 'A' cols must be the same as the HPolyhedron's dimension."
         << std::endl;
     return false;
   }
@@ -217,7 +231,7 @@ bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
   HPolyhedron Pre(PreA, bi_);
   HPolyhedron This(Ai_, bi_);
 
-  if (Pre.ContainsPoly(This)) {
+  if (Pre.Contains(This)) {
     return true;
   } else {
     return false;
@@ -227,37 +241,41 @@ bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A) const {
 bool HPolyhedron::isPositivelyInvariant(const Eigen::MatrixXd &A,
                                         const Eigen::MatrixXd &E,
                                         HPolyhedron W) const {
-  //   // Argument checks
-  //   if (A.cols() != A.rows()) {
-  //     std::cerr << "Matrix 'A' must be square." << std::endl;
-  //     return false;
-  //   }
-  //   if (A.rows() != E.rows()) {
-  //     std::cerr << "Matrices 'A' and 'E' must have the same number of rows."
-  //               << std::endl;
-  //     return false;
-  //   }
-  //   if (A.rows() != Ai_.cols()) {
-  //     std::cerr
-  //         << "Matrix 'A' rows must be the same as the HPolyhedron's
-  //         dimension."
-  //         << std::endl;
-  //     return false;
-  //   }
+  // Argument checks
+  if (A.cols() != A.rows()) {
+    std::cerr << "Matrix 'A' must be square." << std::endl;
+    return false;
+  }
+  if (A.cols() != SpaceDim_) {
+    std::cerr
+        << "Matrix 'A' cols must be the same as the HPolyhedron's dimension."
+        << std::endl;
+    return false;
+  }
+  if (A.rows() != E.rows()) {
+    std::cerr << "Matrices 'A' and 'E' must have the same number of rows."
+              << std::endl;
+    return false;
+  }
+  if (E.cols() != W.GetSpaceDim()) {
+    std::cerr << "Matrix 'E' cols must be the same as the 'W' HPolyhedron's "
+                 "dimension."
+              << std::endl;
+    return false;
+  }
   HPolyhedron This(Ai_, bi_);
-  W.affineT(E);
 
-  return (This - W).isPositivelyInvariant(A);
+  return (This - W.affineT(E)).isPositivelyInvariant(A);
 }
 
 // Support
-VectorXd HPolyhedron::ComputeSupport(const MatrixXd &A_other) const {
+VectorXd HPolyhedron::ComputeSupport(const MatrixXd &A) const {
 
-  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("SCIP"));
+  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver("GUROBI"));
   const double infinity = solver->infinity();
 
   // Number of hyperplanes
-  int NHyperPlanes = A_other.rows();
+  int NHyperPlanes = A.rows();
 
   VectorXd supp(NHyperPlanes);
 
@@ -272,40 +290,42 @@ VectorXd HPolyhedron::ComputeSupport(const MatrixXd &A_other) const {
 
 #ifdef CIS2M_DEBUG
   std::cout << "S: " << std::endl << Ai_ << std::endl;
-  std::cout << "Hyperplanes: " << std::endl << A_other << std::endl;
+  std::cout << "Hyperplanes: " << std::endl << A << std::endl;
 #endif
 
   for (int hp = 0; hp < NHyperPlanes; hp++) {
     solver->Clear();
+    // Set silent
+    solver->SuppressOutput();
 
     // Create the X variable
     int NumVars = SpaceDim_;
     std::vector<MPVariable *> x(NumVars);
     for (int i = 0; i < NumVars; i++) {
-      x[i] = solver->MakeNumVar(-100, 100, "");
+      x[i] = solver->MakeNumVar(-infinity, infinity, "");
     }
 
     // Create the inequalities constraints
-    // std::cout << "Setting Constraint coefficients..." << std::endl;
     for (int i = 0; i < NumIneqs_; i++) {
       MPConstraint *con = solver->MakeRowConstraint(-infinity, bi_(i), "");
-      // std::cout << "[" << i << "]:";
       for (int j = 0; j < NumVars; j++) {
         con->SetCoefficient(x[j], Ai_(i, j));
-        // std::cout << Ai_(i, j) << " ";
       }
-      // std::cout << std::endl;
+    }
+    // Add equality constraints, if any
+    for (int i = 0; i < NumEqs_; i++) {
+      MPConstraint *con = solver->MakeRowConstraint(be_(i), be_(i), "");
+      for (int j = 0; j < NumVars; j++) {
+        con->SetCoefficient(x[j], Ae_(i, j));
+      }
     }
 
     // Define the objective
     MPObjective *const obj = solver->MutableObjective();
-    VectorXd cost_coeff = VectorXd(A_other.row(hp));
-    // std::cout << "Cost:" << std::endl;
+    VectorXd cost_coeff = VectorXd(A.row(hp));
     for (int j = 0; j < NumVars; j++) {
       obj->SetCoefficient(x[j], cost_coeff(j));
-      // std::cout << cost_coeff(j) << " ";
     }
-    // std::cout << std::endl;
     obj->SetMaximization();
 
     const MPSolver::ResultStatus result_status = solver->Solve();
@@ -318,23 +338,20 @@ VectorXd HPolyhedron::ComputeSupport(const MatrixXd &A_other) const {
                 << cost_coeff.transpose() << std::endl;
       std::cerr << "Polyhedron: " << std::endl << Ai_ << std::endl;
       std::cerr << std::endl;
+    } else if (result_status == MPSolver::UNBOUNDED) {
+      supp(hp) = 0;
+      std::cout << "Always Good!" << std::endl;
     } else {
-      if (result_status == MPSolver::UNBOUNDED) {
-        supp(hp) = 0;
-        std::cout << "Always Good!" << std::endl;
-      } else {
-        supp(hp) = obj->Value();
-        /*
-        std::cout << "Optimal Value = " << supp(hp) << std::endl;
-        std::cout << "x: ";
-        for (auto xi : x) {
-                std::cout << xi->solution_value() << " ";
-        }
-        std::cout << std::endl;
-        */
+      supp(hp) = obj->Value();
+      /*
+      std::cout << "Optimal Value = " << supp(hp) << std::endl;
+      std::cout << "x: ";
+      for (auto xi : x) {
+              std::cout << xi->solution_value() << " ";
       }
+      std::cout << std::endl;
+      */
     }
-    // std::cout << std::endl;
   }
   return supp;
 }
@@ -489,45 +506,49 @@ HPolyhedron HPolyhedron::affineT(const MatrixXd &T) {
 }
 
 // Operators
-HPolyhedron &HPolyhedron::operator=(const HPolyhedron &other) {
-  Ai_ = other.Ai();
-  bi_ = other.bi();
+HPolyhedron &HPolyhedron::operator=(const HPolyhedron &P) {
+  Ai_ = P.Ai();
+  bi_ = P.bi();
 
-  Ae_ = other.Ae();
-  be_ = other.be();
+  Ae_ = P.Ae();
+  be_ = P.be();
 
-  valid_ = other.valid_;
+  SpaceDim_ = P.SpaceDim_;
+  NumIneqs_ = P.NumIneqs_;
+  NumEqs_ = P.NumEqs_;
+
+  valid_ = P.valid_;
 
   return *this;
 }
 
-HPolyhedron &HPolyhedron::operator+=(const HPolyhedron &rhs) {
-  // Substract the rhs.Support(this.A) from the this.b vector
+HPolyhedron &HPolyhedron::operator+=(const HPolyhedron &P) {
+  // Substract the P.Support(this.A) from the this.b vector
   // max <a_i, x>
-  // subj. to x \in rhs
+  // subj. to x \in P
   // where a_i is the vector representing a hyperplane of *this polyhedron.
-  if (SpaceDim_ != rhs.SpaceDim_) {
+  if (SpaceDim_ != P.SpaceDim_) {
     std::cerr << "The polyhedrons should have the same dimension" << std::endl;
     return *this;
   }
 
-  VectorXd supp = rhs.ComputeSupport(Ai_);
+  VectorXd supp = P.ComputeSupport(Ai_);
   bi_ = bi_ + supp;
 
   return *this;
 }
 
-HPolyhedron &HPolyhedron::operator-=(const HPolyhedron &rhs) {
-  // Substract the rhs.Support(this.A) from the this.b vector
+HPolyhedron &HPolyhedron::operator-=(const HPolyhedron &P) {
+  // Substract the P.Support(this.A) from the this.b vector
   // max <a_i, x>
-  // subj. to x \in rhs
+  // subj. to x \in P
   // where a_i is the vector representing a hyperplane of *this polyhedron.
-  if (SpaceDim_ != rhs.SpaceDim_) {
+  if (SpaceDim_ != P.SpaceDim_) {
     std::cerr << "The polyhedrons should have the same dimension" << std::endl;
     return *this;
   }
 
-  VectorXd supp = rhs.ComputeSupport(Ai_);
+  VectorXd supp = P.ComputeSupport(Ai_);
   bi_ = bi_ - supp;
 
   return *this;
@@ -546,7 +567,11 @@ int HPolyhedron::GetSpaceDim() { return SpaceDim_; }
 
 int HPolyhedron::GetNumInequalities() { return NumIneqs_; }
 
+int HPolyhedron::GetNumEqualities() { return NumEqs_; }
+
 bool HPolyhedron::isValid() const { return valid_; }
+
+bool HPolyhedron::hasEqualityConstraints() const { return (NumEqs_ > 0); }
 
 // Operators
 HPolyhedron operator+(HPolyhedron Pl, HPolyhedron Pr) { return Pl += Pr; }

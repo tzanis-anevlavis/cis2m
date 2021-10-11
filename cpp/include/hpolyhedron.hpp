@@ -31,13 +31,13 @@ public:
   ~HPolyhedron();
 
   /**
-   * \brief Check if a point belongs to the Polyhedron
+   * \brief Check if the HPolyhedron contains another HPolyhedron
    *
-   * \param[in]	point	Point to be tested
+   * \param[in]	P	HPolyhedron to be tested
    *
    * return	Boolean
    */
-  bool ContainsPoly(HPolyhedron &Y) const;
+  bool Contains(const HPolyhedron &P) const;
 
   /**
    * \brief Check if a point belongs to the Polyhedron
@@ -78,12 +78,12 @@ public:
 
   /**
    * \brief Compute the support of the polyhedron along
-   * 	the directions provided in A_other
-   * \param[in]	A_other	Matrix containing the directions as rows
+   * 	the directions provided in A
+   * \param[in]	A	Matrix containing the directions as rows
    *
    * \return	Vector with the support along the required directions
    */
-  Eigen::VectorXd ComputeSupport(const Eigen::MatrixXd &A_other) const;
+  Eigen::VectorXd ComputeSupport(const Eigen::MatrixXd &A) const;
 
   /**
    * \brief Projection of the polyhedron on the space with a component removed
@@ -105,7 +105,7 @@ public:
   /**
    * \brief Operator=
    */
-  HPolyhedron &operator=(const HPolyhedron &other);
+  HPolyhedron &operator=(const HPolyhedron &P);
 
   /**
    * \brief Operator+=
@@ -146,6 +146,11 @@ public:
   int GetNumInequalities();
 
   /**
+   * \brief Get the number of inequalities composing the system
+   */
+  int GetNumEqualities();
+
+  /**
    * \brief Get the size of the state
    */
   int GetSpaceDim();
@@ -154,6 +159,11 @@ public:
    * \brief Check if the HPolyedron is defined
    */
   bool isValid() const;
+
+  /**
+   * \brief Check if the HPolyedron has equality constraints
+   */
+  bool hasEqualityConstraints() const;
 
 private:
   bool valid_;
@@ -166,6 +176,7 @@ private:
 
   int SpaceDim_;
   int NumIneqs_;
+  int NumEqs_;
 };
 
 // Operators  outside che class
