@@ -1,4 +1,4 @@
-function RCIS = computeRCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,implicit,L,T)
+function [RCIS, A_hd] = computeRCIS(A,B,Gx,Fx,Gu,Fu,E,Gw,Fw,implicit,L,T)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2021, Tzanis Anevlavis
 %
@@ -75,19 +75,19 @@ end
 %% Convert system in Brunovsky normal form space and extend state space.
 % TODO: extended space not needed with the latest formulation. 
 % Should optimize the code. 
-[Ac,Bc,Ec,Gc,Fc,Pmat,nmax,alpha,Bm,isExtended] = convert2Bru(A,B,E,Gx,Fx,Gu,Fu);
+[Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = convert2Bru(A,B,E,Gx,Fx,Gu,Fu);
 
 %% Construct S_k sets.
 [G_k, F_k] = construct_Sk(Ac,Bc,Gc,Fc,Ec,Gw,Fw,Level,nmax);
 
 %% Implicit Controlled Invariant Set.
 if (exist('T','var')) % T(tau) is specified, compute (R)CIS_(Tau,Lambda). 
-    [rcisLiftedA,rcisLiftedb] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,L,T,nmax);
+    [rcisLiftedA,rcisLiftedb, A_hd, K, P] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,L,T,nmax);
     implicitRCIS = Polyhedron('H',[rcisLiftedA,rcisLiftedb]);
 else                  % Compute the hierarchy level (R)CIS_(L). 
     for Lambda = 1:Level
         Tau = Level-Lambda;
-        [rcisLiftedA,rcisLiftedb] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda,Tau,nmax);
+        [rcisLiftedA,rcisLiftedb, A_hd, K, P] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda,Tau,nmax);
         implicitRCIS(Lambda) = Polyhedron('H',[rcisLiftedA,rcisLiftedb]);
     end
 end
@@ -108,7 +108,7 @@ for i = 1:length(implicitRCIS)
             Gvirtual = rcisLiftedA(:,n+m+1:end);
 
             % Map back from Brunovsky to original space
-            Gstate = Gz * Pmat + Gv * alpha * Pmat;
+            Gstate = Gz * Pmat + Gv * Am * Pmat;
             Ginput = Gv * Bm;
         else
             n = size(Ac,2); m = size(Bc,2);
@@ -123,11 +123,21 @@ for i = 1:length(implicitRCIS)
         end
         rcisA = [Gstate Ginput Gvirtual];
         rcisb = rcisLiftedb;
+
+        % Transform A_hd from Brunovsky space to original space.
+        % x+ = Ax + Bu
+        %    u = -inv(Bm) Am T x + inv(Bm) v 
+        % => u+ = -inv(Bm) Am T A x -inv(Bm) Am T B u + inv(Bm) K {virtual}
+        % and {virtual}+ = P virtual. 
+        A_hd = [A B sparse(size(A,1), size(Gvirtual,2));
+                -Bm\Am*Pmat*A -Bm\Am*Pmat*B Bm\K;
+                sparse(size(P,1),size(A,2)+size(B,2)) P];
+
     else                % Return explicit (R)CIS. 
         % Use MPT3 to project back to the original space.
-        P = Polyhedron('A',rcisLiftedA,'b',rcisLiftedb);
-        Px = P.projection(1:size(A,2),'ifourier');  % 'ifourier' seems to be better than 'mplp' for many cases.
-        rcisA = Px.A; rcisb = Px.b;
+        rcisLifted = Polyhedron('A',rcisLiftedA,'b',rcisLiftedb);
+        rcis = rcisLifted.projection(1:size(A,2),'ifourier');  % 'ifourier' seems to be better than 'mplp' for many cases.
+        rcisA = rcis.A; rcisb = rcis.b;
         % Return to original coordinates:
         rcisA = rcisA * Pmat;
 

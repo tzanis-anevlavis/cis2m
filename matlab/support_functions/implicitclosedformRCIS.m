@@ -1,4 +1,4 @@
-function [mcisA,mcisb] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda,Tau,nmax)
+function [mcisA,mcisb, A_hd, K, P] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda,Tau,nmax)
 %% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 % Copyright (C) 2021, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
@@ -50,5 +50,7 @@ mcisA = blk_G_k * A_mats;
 mcisb = cat(1, F_k{:}); % [F; F_k{1}; .. F_k{nmax}; .. F_k{nmax}]
 
 %% Check if positively invariant:
-% mcis = Polyhedron('H', [mcisA mcisb]);
-% isPositivelyInvariant(mcis, A_hd)
+mcis = Polyhedron('H', [mcisA mcisb]);
+if (~isPositivelyInvariant(mcis, A_hd))
+    warning("Implicit CIS not positively invariant in Brunovsky space!");
+end
