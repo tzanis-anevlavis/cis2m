@@ -1,4 +1,4 @@
-function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,alpha,Bm,isExtended] = convert2Bru(A,B,E,G,F,Gu,Fu)
+function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = convert2Bru(A,B,E,G,F,Gu,Fu)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2021, Tzanis Anevlavis.
 %
@@ -113,18 +113,18 @@ end
 Bm = Bm * B;
 Bm = sparse(Bm);
 
-% alpha
-% alpha = [];
-alpha = zeros(m,n);
+% Am
+% Am = [];
+Am = zeros(m,n);
 tmpA = (Pmat * A) / Pmat;
 for i = 1:m
-    alpha(i,:) = tmpA(sigma(i),:);
+    Am(i,:) = tmpA(sigma(i),:);
 end
-alpha = sparse(alpha);
-% u = -inv(Bm) * alpha * x + inv(Bm) * v
+Am = sparse(Am);
+% u = -inv(Bm) * Am * x + inv(Bm) * v
 
 % System in Brunovsky Normal Form after feedback:
-Ac = (Pmat * A) / Pmat - ((Pmat * B) / Bm) * alpha;
+Ac = (Pmat * A) / Pmat - ((Pmat * B) / Bm) * Am;
 Bc = (Pmat * B) / Bm;
 if (~isempty(E))
     Ec = Pmat * E;
@@ -143,8 +143,8 @@ Fc = F;
 isExtended = false;
 if (~isempty(Gu))
     isExtended = true;
-    % u = -inv(Bm)alpha z + inv(Bm)v = inv(Bm)[-alpha I] [z,v]
-    alpha_e = [-(speye(m)/Bm)*alpha speye(m)/Bm];
+    % u = -inv(Bm)Am z + inv(Bm)v = inv(Bm)[-Am I] [z,v]
+    alpha_e = [-(speye(m)/Bm)*Am speye(m)/Bm];
     % Extended system:
     Ae = [Ac Bc; sparse(size(Bc,2),size(Ac,2)+size(Bc,2))];
     Be = [sparse(size(Ac,1),size(Bc,2)); speye(size(Bc,2))];
