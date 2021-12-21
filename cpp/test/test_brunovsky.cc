@@ -27,7 +27,7 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *****************************************************************************/
+ **************************************************************2***************/
 
 /* This test constructs an input system (A,B,E), state safe set (Gx,Fx), and
  * transforms it to Brunovsky form (Abru, Bbru, Ebru) and (Gxbru, Fx) */
@@ -38,82 +38,49 @@
 #include <iomanip> // std::setprecision
 #include <iostream>
 
-using namespace std::chrono;
+#include <assert.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 int main() {
-  // System Dynamics
-  MatrixXd At(9, 9);
-  At << 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.0, 0,
-      0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0,
-      0, 0, 0, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0,
-      1.0, 0, 0, 0, 0.0072, 0, 0, 0.1200, 0, 0, 1.0, 0, 0, 0, 0.0072, 0, 0,
-      0.1200, 0, 0, 1.0;
-  MatrixXd A = At.transpose();
-  MatrixXd B(9, 3);
-  B << 0.000288, 0, 0, 0, 0.000288, 0, 0, 0, 0.000288, 0.0072, 0, 0, 0, 0.0072,
-      0, 0, 0, 0.0072, 0.1200, 0, 0, 0, 0.1200, 0, 0, 0, 0.1200;
-  MatrixXd E = MatrixXd::Identity(9, 9);
+    // ==============================================================================================
+    // System Dynamics
+    // ==============================================================================================
+    MatrixXd A(3, 3);
+    A << 1.0, 0.12, 0.0072, 0, 1.0, 0.12, 0, 0, 1.0;
+    MatrixXd B(3, 1);
+    B << 0.000288, 0.0072, 0.12;
+    MatrixXd E = MatrixXd::Identity(3, 3);
 
-  // Irredundant safe set:
-  MatrixXd Gx(18, 9);
-  Gx << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, -0.55470,
-      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-  VectorXd Fx(18, 1);
-  Fx << 3.0000, 3.0000, 3.0000, 3.0000, 3.0000, 0.8660, 0.8660, 0.8660, 0.8660,
-      0.8660, 0.8660, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, 2.8319, -0.8321;
-  cis2m::HPolyhedron SafeSet(Gx, Fx);
+    // ==============================================================================================
+    //  Transformation to Brunovsky space
+    // ==============================================================================================
+    cis2m::BrunovskyForm bru_form(A, B, E);
+    std::pair<MatrixXd, MatrixXd> sysBru = bru_form.GetBrunovskySystem();
 
-  //   std::cout << "========= Original Space =========" << std::endl;
-  //   std::cout << "A: " << std::endl
-  //             << std::scientific << std::setprecision(20) << A << std::endl;
-  //   std::cout << "B: " << std::endl
-  //             << std::scientific << std::setprecision(20) << B << std::endl;
-  //   std::cout << "E: " << std::endl
-  //             << std::scientific << std::setprecision(20) << E << std::endl;
-  //   std::cout << "Gx: " << std::endl
-  //             << std::scientific << std::setprecision(20) << Gx << std::endl;
+    // ==============================================================================================
+    // Expected Brunovsky System
+    // ==============================================================================================
+    MatrixXd Abru(3, 3);
+    Abru << 0, 1.0, 0, 0, 0, 1.0, 0, 0, 0;
+    MatrixXd Bbru(3, 1);
+    Bbru << 0, 0, 1;
+    MatrixXd Ebru(3, 3);
+    Ebru << 578.7037037037037037, -69.4444444444444444, 2.7777777777777778,
+        578.7037037037037037, 0, -1.3888888888888888, 578.7037037037037037,
+        69.4444444444444444, 2.7777777777777778;
+    MatrixXd Tbru = bru_form.GetTransformationMatrix();
 
-  // ==============================================================================================
-  //  Transformation to Brunovsky space
-  // ==============================================================================================
-  cis2m::CISGenerator cisg(2, 0, A, B);
-  cis2m::BrunovskyForm *bru_form = cisg.getBrunovskyForm();
-
-  std::pair<MatrixXd, MatrixXd> sysBru = bru_form->GetSystem();
-  MatrixXd T = bru_form->GetTransformationMatrix();
-
-  std::cout << "========= Brunovsky Space =========" << std::endl;
-  //   std::cout << "Abru: " << std::endl
-  //             << std::scientific << std::setprecision(20) << sysBru.first
-  //             << std::endl;
-  //   std::cout << "Bbru: " << std::endl
-  //             << std::scientific << std::setprecision(20) << sysBru.second
-  //             << std::endl;
-  //   std::cout << "Ebru: " << std::endl
-  //             << std::scientific << std::setprecision(20) << T * E <<
-  //             std::endl;
-  //   std::cout << "T: " << std::endl
-  //             << std::scientific << std::setprecision(20) << T << std::endl;
-  //   std::cout << "Gxbru: " << std::endl
-  //             << std::scientific << std::setprecision(20) << Gx * T.inverse()
-  //             << std::endl;
-
-  MatrixXd A_BF_extended(10, 3);
-  A_BF_extended.block(0, 0, 3, 3) << Eigen::MatrixXd::Identity(3, 3);
-  std::cout << "A_BF_extended: " << std::endl << A_BF_extended << std::endl;
-
-  return 0;
+    // ==============================================================================================
+    // Check equalities
+    // ==============================================================================================
+    double tol = 1e-13;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            assert(abs(Abru(i, j) - sysBru.first(i, j)) < tol);
+            assert(abs((Tbru * E)(i, j) - Ebru(i, j)) < tol);
+        }
+        assert(abs(Bbru(i) - sysBru.second(i)) < tol);
+    }
 }

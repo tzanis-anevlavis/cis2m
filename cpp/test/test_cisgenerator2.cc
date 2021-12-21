@@ -38,53 +38,54 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 int main() {
-  // Safe set:
-  MatrixXd Gx(6, 3);
-  Gx << Eigen::MatrixXd::Identity(3, 3), -Eigen::MatrixXd::Identity(3, 3);
-  VectorXd Fx(6, 1);
-  Fx << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
-  cis2m::HPolyhedron SafeSet(Gx, Fx);
+    // Safe set:
+    MatrixXd Gx(6, 3);
+    Gx << Eigen::MatrixXd::Identity(3, 3), -Eigen::MatrixXd::Identity(3, 3);
+    VectorXd Fx(6, 1);
+    Fx << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+    cis2m::HPolyhedron SafeSet(Gx, Fx);
 
-  // Disturbance set:
-  MatrixXd Gw(6, 3);
-  Gw << MatrixXd::Identity(3, 3), -MatrixXd::Identity(3, 3);
-  VectorXd Fw(6, 1);
-  Fw << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
-  cis2m::HPolyhedron W(Gw, Fw);
+    // Disturbance set:
+    MatrixXd Gw(6, 3);
+    Gw << MatrixXd::Identity(3, 3), -MatrixXd::Identity(3, 3);
+    VectorXd Fw(6, 1);
+    Fw << 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
+    cis2m::HPolyhedron W(Gw, Fw);
 
-  // System Dynamics
-  MatrixXd A(3, 3);
-  A << 0, 1.0, 0, 0, 0, 1.0, 0, 0, 0;
-  MatrixXd B(3, 1);
-  B << 0, 0, 1.0;
-  MatrixXd E = MatrixXd::Identity(3, 3);
+    // System Dynamics
+    MatrixXd A(3, 3);
+    A << 0, 1.0, 0, 0, 0, 1.0, 0, 0, 0;
+    MatrixXd B(3, 1);
+    B << 0, 0, 1.0;
+    MatrixXd E = MatrixXd::Identity(3, 3);
 
-  // RCIS
-  cis2m::CISGenerator cisg(2, 0, A, B, E);
-  // Add disturbance information
-  cisg.AddDisturbanceSet(W);
+    // RCIS
+    cis2m::CISGenerator cisg(2, 0, A, B, E);
+    // Add disturbance information
+    cisg.AddDisturbanceSet(W);
 
-  // Computing the CIS given a Safe set
-  cisg.computeCIS(SafeSet, 2, 0);
-  cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
+    // Computing the CIS given a Safe set
+    cisg.computeImplicitCIS(SafeSet, 2, 0);
+    cis2m::HPolyhedron CIS = cisg.Fetch_CIS();
 
-  //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
-  //   std::cout << "b: " << std::endl << CIS.bi() << std::endl;
+    //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
+    //   std::cout << "b: " << std::endl << CIS.bi() << std::endl;
 
-  //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
+    //   std::cout << "A: " << std::endl << CIS.Ai() << std::endl;
 
-  //   std::cout << "CIS Size: " << CIS.Ai().rows() << " X " << CIS.Ai().cols()
-  //             << std::endl;
-  //   std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl;
+    //   std::cout << "CIS Size: " << CIS.Ai().rows() << " X " <<
+    //   CIS.Ai().cols()
+    //             << std::endl;
+    //   std::cout << "CIS: " << std::endl << cisg.Fetch_A_State() << std::endl;
 
-  cis2m::HPolyhedron CISTT(CIS.Ai(), CIS.bi());
-  std::cout << CISTT.isEmpty() << std::endl;
+    cis2m::HPolyhedron CISTT(CIS.Ai(), CIS.bi());
+    std::cout << CISTT.isEmpty() << std::endl;
 
-  //   MatrixXd Alifted = cisg.Fetch_A_lifted();
-  //   std::cout << "Alifted: " << std::endl << Alifted << std::endl;
+    //   MatrixXd Alifted = cisg.Fetch_A_lifted();
+    //   std::cout << "Alifted: " << std::endl << Alifted << std::endl;
 
-  //   std::cout << CISTT.isPositivelyInvariant(Alifted) << std::endl;
-  //   std::cout << CISTT.isPositivelyInvariant(A, E, W) << std::endl;
+    //   std::cout << CISTT.isPositivelyInvariant(Alifted) << std::endl;
+    //   std::cout << CISTT.isPositivelyInvariant(A, E, W) << std::endl;
 
-  return 0;
+    return 0;
 }
