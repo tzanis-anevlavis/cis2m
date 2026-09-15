@@ -1,4 +1,4 @@
-function inputArgCheck(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw)
+function validateComputeRCISInputs(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2021, Tzanis Anevlavis.
 %

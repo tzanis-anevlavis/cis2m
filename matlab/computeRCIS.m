@@ -32,12 +32,12 @@ function [RCIS, A_hd] = computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, options)
 %
 % Inputs:   A, B, E : matrices defining the discrete-time linear system:
 %                           x+ = Ax + Bu + Ew.
-%           Gx, Fx: define the safe set: 
+%           Gx, Fx: define the safe set:
 %                           {x \in \R^n | Gx x <= Fx}.
-%           Gu, Fu: define the input constraints: 
+%           Gu, Fu: define the input constraints:
 %                           {u \in \R^m | Gu u <= Fu}.
 %                   If no input constraints, use: Gu = [] and Fu = [].
-%           Gw, Fw: define the disturbance set: 
+%           Gw, Fw: define the disturbance set:
 %                           {w \in \R^k | Gw w <= Fw}.
 %                  If no disturbance use: E = [], Gw = [], and Fw = [].
 %
@@ -89,7 +89,7 @@ end
 %% Add support folder to path.
 % addpath('./support_functions/');
 
-%% Input arguments check.
+%% Validate inputs.
 validateattributes(options.is_implicit, {'numeric', 'logical'}, ...
     {'scalar', 'real', 'binary'}, mfilename, 'is_implicit');
 is_implicit = logical(options.is_implicit);
@@ -114,37 +114,37 @@ else
         'Specify a nonempty lambda or hierarchy_level.');
 end
 
-inputArgCheck(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw);
+validateComputeRCISInputs(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw);
 
 % Use sparse matrices for faster computations.
-A = sparse(A); 
-B = sparse(B); 
-Gx = sparse(Gx); 
+A = sparse(A);
+B = sparse(B);
+Gx = sparse(Gx);
 Fx = sparse(Fx);
-Gu = sparse(Gu); 
+Gu = sparse(Gu);
 Fu = sparse(Fu);
-E = sparse(E); 
-Gw = sparse(Gw); 
+E = sparse(E);
+Gw = sparse(Gw);
 Fw = sparse(Fw);
 
 %% Convert system in Brunovsky normal form space and extend state space.
-% TODO: extended space not needed with the latest formulation. 
-% Should optimize the code. 
-[Ac, Bc, Ec, Gc, Fc, Pmat, nmax, Am, Bm, isExtended] = convert2Bru(A, B, E, Gx, Fx, Gu, Fu);
+% TODO: extended space not needed with the latest formulation.
+% Should optimize the code.
+[Ac, Bc, Ec, Gc, Fc, Pmat, nmax, Am, Bm, isExtended] = transformToBrunovskyNormalForm(A, B, E, Gx, Fx, Gu, Fu);
 
-%% Construct S_k sets.
-[G_k, F_k] = construct_Sk(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax);
+%% Construct shrunk safe sets.
+[G_k, F_k] = constructShrunkSafeSetConstraints(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax);
 
 %% Implicit Controlled Invariant Set.
 if (~should_compute_full_hierarchy)
     % Not full hierarchy, compute (R)CIS_(tau, lambda).
-    [rcisLiftedA, rcisLiftedb, A_hd, K, P] = implicitclosedformRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
+    [rcisLiftedA, rcisLiftedb, A_hd, K, P] = computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
     implicitRCIS = Polyhedron('H',[rcisLiftedA, rcisLiftedb]);
 else
     % Full hierarchy computation at level q.
     for lambda = 1:q
         tau = q - lambda;
-        [rcisLiftedA, rcisLiftedb, A_hd, K, P] = implicitclosedformRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
+        [rcisLiftedA, rcisLiftedb, A_hd, K, P] = computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
         implicitRCIS(lambda) = Polyhedron('H',[rcisLiftedA, rcisLiftedb]);
     end
 end
@@ -157,7 +157,7 @@ for i = 1:length(implicitRCIS)
         % Return implicit (R)CIS.
         if (isExtended)
             % Extract state input matrices in [z,u,v], z\in\R^n, u\in\R^m, v\in\R^(m*q).
-            n = size(Ac, 2) - size(Bc, 2); % Dimension of original space. 
+            n = size(Ac, 2) - size(Bc, 2); % Dimension of original space.
             m = size(Bc, 2);
             Gz = rcisLiftedA(:, 1:n);
             Gv = rcisLiftedA(:, (n + 1):(n + m));
@@ -166,7 +166,7 @@ for i = 1:length(implicitRCIS)
             Gstate = Gz * Pmat + Gv * Am * Pmat;
             Ginput = Gv * Bm;
         else
-            n = size(Ac, 2); 
+            n = size(Ac, 2);
             m = size(Bc, 2);
             % Extract state input matrices in y = (z,v)
             Gz = rcisLiftedA(:, 1:n);
@@ -181,19 +181,19 @@ for i = 1:length(implicitRCIS)
 
         % Transform A_hd from Brunovsky space to original space.
         % x+ = Ax + Bu
-        %    u = -inv(Bm) Am T x + inv(Bm) v 
+        %    u = -inv(Bm) Am T x + inv(Bm) v
         % => u+ = -inv(Bm) Am T A x -inv(Bm) Am T B u + inv(Bm) K {virtual}
-        % and {virtual}+ = P virtual. 
+        % and {virtual}+ = P virtual.
         A_hd = [A B sparse(size(A, 1), size(Gvirtual, 2));
                 -Bm\Am*Pmat*A -Bm\Am*Pmat*B Bm\K;
                 sparse(size(P, 1), size(A, 2) + size(B, 2)) P];
 
     else
-        % Return explicit (R)CIS. 
+        % Return explicit (R)CIS.
         % Use MPT3 to project back to the original space.
         rcisLifted = Polyhedron('A', rcisLiftedA, 'b', rcisLiftedb);
         rcis = rcisLifted.projection(1:size(A, 2), 'ifourier');  % 'ifourier' seems to be better than 'mplp' for many cases.
-        rcisA = rcis.A; 
+        rcisA = rcis.A;
         rcisb = rcis.b;
         % Return to original coordinates:
         rcisA = rcisA * Pmat;

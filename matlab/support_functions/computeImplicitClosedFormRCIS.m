@@ -1,4 +1,4 @@
-function [mcisA,mcisb, A_hd, K, P] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda,Tau,nmax)
+function [mcisA,mcisb, A_hd, K, P] = computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, Lambda, Tau, nmax)
 %% Authors: T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 % Copyright (C) 2021, T.Anevlavis, Z.Liu, N.Ozay, and P.Tabuada
 %
@@ -16,7 +16,7 @@ function [mcisA,mcisb, A_hd, K, P] = implicitclosedformRCIS(Ac,Bc,G_k,F_k,Lambda
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the Controlled Invariance in 2 Moves repository 
+% This code is part of the Controlled Invariance in 2 Moves repository
 % (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
 % For any comments contact Tzanis Anevlavis @ t.anevlavis@ucla.edu.

@@ -1,4 +1,4 @@
-function [G_k, F_k] = construct_Sk(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax)
+function [G_k, F_k] = constructShrunkSafeSetConstraints(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2021, Tzanis Anevlavis
 %
@@ -24,8 +24,8 @@ function [G_k, F_k] = construct_Sk(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax)
 %% Description:
 %
 % For a safe set S and a disturbance set W, this function:
-%   a)  Computes the accumulated disturbance set W_t of a linear system for 
-%       monotonically increasing `t` up to and including the Minimal Robust 
+%   a)  Computes the accumulated disturbance set W_t of a linear system for
+%       monotonically increasing `t` up to and including the Minimal Robust
 %       Positively Invariant Subset (RPIS).
 %   b)  Computes the Pontryagin (Minkowski) differences representing shrunk safe sets:
 %                   S_t = S - W_t, t >= 1, with S_0 = S,
@@ -36,17 +36,17 @@ function [G_k, F_k] = construct_Sk(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax)
 % Inputs:   Ac, Bc, Ec : matrices that define the discrete-time linear system:
 %                           x+ = Ac x + Bc u + Ec w,
 %                        in the Brunovsky normal form.
-%           Gc, Fc: matrices that define the safe set: 
+%           Gc, Fc: matrices that define the safe set:
 %                           S = {x \in \R^n | Gc x <= Fc}.
-%           Gw, Fw: matrices that define the disturbance set: 
+%           Gw, Fw: matrices that define the disturbance set:
 %                           W = {w \in \R^k | Gw w <= Fw}.
 %                   If no disturbance use: Ec = [], Gw = [], and Fw = [].
 %           q:      a positive integer, q = tau + lambda, the total sequence length
 %           nmax:   the largest controllability index of the system.
 %
 % Outputs:  G_k, F_k: (nmax + q)-by-1 cell arrays of inequality matrices
-%                   and right-hand sides, respectively. 
-%                   For each actual time t = 0, ..., nmax + q - 1, 
+%                   and right-hand sides, respectively.
+%                   For each actual time t = 0, ..., nmax + q - 1,
 %                   cell t + 1 represents:
 %                       G_k{t + 1} * [x; v] <= F_k{t + 1},
 %                   i.e., S_t x R^(m*q), where n = size(Ac, 2),
@@ -64,7 +64,7 @@ function [G_k, F_k] = construct_Sk(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax)
 % Conference, Zürich, Switzerland, July 17-19 2013, pp. 502-510,
 % http://control.ee.ethz.ch/mpt.
 
-n = size(Ac,2); 
+n = size(Ac,2);
 m = size(Bc,2);
 
 % Basic sanity checks (fail fast if assumptions are violated)
@@ -97,8 +97,8 @@ F_k = cell(N, 1);
 % Precompute base constraints. This is safe set S.
 G_base = [Gc sparse(size(Gc, 1), mq)];
 F_base = Fc;
-% S_0 = S. Note: since MATLAB is 1-indexed, notice that 
-% t = 0 corresponds to index 1. 
+% S_0 = S. Note: since MATLAB is 1-indexed, notice that
+% t = 0 corresponds to index 1.
 G_k{1} = G_base;
 F_k{1} = F_base;
 

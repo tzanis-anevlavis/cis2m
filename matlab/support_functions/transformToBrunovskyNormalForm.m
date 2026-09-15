@@ -1,4 +1,4 @@
-function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = convert2Bru(A,B,E,G,F,Gu,Fu)
+function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = transformToBrunovskyNormalForm(A,B,E,G,F,Gu,Fu)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2021, Tzanis Anevlavis.
 %
@@ -25,7 +25,8 @@ function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = convert2Bru(A,B,E,G,F,Gu,
 %
 %
 %% Description:
-% Convert system in Brunovsky normal form space.
+% Converts a linear system and a corresponding set of constraints into the
+% Brunovsky normal form space.
 
 n = size(A,2);  % number of states
 m = size(B,2);  % number of inputs
@@ -45,20 +46,20 @@ end
 Mu = zeros(m,1);
 count = 0;
 S = zeros(n,n);
-idx = 1; 
+idx = 1;
 for i = 1:n
     for j = 1:m
         count = count+1;
         if (count==1)
-%             S = Co(:,1); 
-            S(:,idx) = Co(:,1); 
+%             S = Co(:,1);
+            S(:,idx) = Co(:,1);
             Mu(j)= Mu(j)+1;
             rank_S = rank(S);
             idx = idx + 1;
         else
-            rank_Snew = rank([S Co(:,count)]);  
+            rank_Snew = rank([S Co(:,count)]);
             if (rank_Snew > rank_S)
-%                 S = [S Co(:,count)]; 
+%                 S = [S Co(:,count)];
                 S(:,idx) = Co(:,count);
                 Mu(j)= Mu(j)+1;
                 rank_S = rank_Snew;
@@ -156,8 +157,8 @@ if (~isempty(Gu))
     % Extended safe set:
     Ge = [Gc sparse(size(Gc,1),size(Gu,2)); Gu * alpha_e];
     Fe = [Fc; Fu];
-    
+
     Ac = Ae; Bc = Be; Ec = Ee; Gc = Ge; Fc = Fe;
-    
+
     nmax = nmax+1;
 end
