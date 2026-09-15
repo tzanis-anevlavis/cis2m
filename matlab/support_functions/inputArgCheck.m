@@ -1,3 +1,4 @@
+function inputArgCheck(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw)
 %% Authors: Tzanis Anevlavis.
 % Copyright (C) 2021, Tzanis Anevlavis.
 %
@@ -24,59 +25,59 @@
 %
 %
 %% Description:
-% Input arguments check.
+% Validate the system, constraint, and disturbance dimensions accepted by
+% computeRCIS. Empty Gu and Fu indicate no input constraints. Empty E, Gw,
+% and Fw indicate no disturbance.
 
-% Check state constraints and system:
-if (~exist('Gx','var') && ~exist('Fx','var'))
-    error('State constraints not specified.')
-elseif (exist('Gx','var') && ~exist('Fx','var'))
-    error('State constraints incomplete: Matrix Gx given, but not vector Fx.')
-elseif (~exist('Gx','var') && exist('Fx','var'))
-    error('State constraints incomplete: Vector Fx given, but not matrix Gx.')
-end
-if (size(Gx,1)~=size(Fx,1))
-    error('Rows of Gx and Fx do not match.')
-elseif (size(Gx,2)~=size(A,2))
-    error('Columns of A (number of states) and Gx do not match.')
-elseif (size(A,1)~=size(B,1))
+% Check the system and state constraints.
+n = size(A, 1);
+if (size(A, 2) ~= n)
+    error('A must be square.')
+elseif (size(B, 1) ~= n)
     error('Rows of A and B do not match.')
+elseif (size(Gx, 2) ~= n)
+    error('Columns of A (number of states) and Gx do not match.')
+elseif (size(Gx, 1) ~= size(Fx, 1))
+    error('Rows of Gx and Fx do not match.')
+elseif (~isempty(Fx) && size(Fx, 2) ~= 1)
+    error('Fx must be a column vector.')
 end
 
-% Check input constraints:
-if (~exist('Gu','var') && ~exist('Fu','var'))
-    Gu = [];    Fu = [];
-elseif (exist('Gu','var') && ~exist('Fu','var'))
+% Check input constraints.
+if (~isempty(Gu) && isempty(Fu))
     error('Input constraints incomplete: Matrix Gu given, but not vector Fu.')
-elseif (~exist('Gu','var') && exist('Fu','var'))
+elseif (isempty(Gu) && ~isempty(Fu))
     error('Input constraints incomplete: Vector Fu given, but not matrix Gu.')
-elseif (~isempty(Gu) && ~isempty(Fu))
-    if (size(Gu,1)~=size(Fu,1))
+elseif (~isempty(Gu))
+    if (size(Gu, 1) ~= size(Fu, 1))
         error('Rows of Gu and Fu do not match.')
-    elseif (size(B,2)~=size(Gu,2))
+    elseif (size(Gu, 2) ~= size(B, 2))
         error('Columns of B (number of inputs) and Gu do not match.')
+    elseif (size(Fu, 2) ~= 1)
+        error('Fu must be a column vector.')
     end
 end
 
-% Disturbance matrix and set. If no disturbance set E=[], Gw=[], Fw=[].
-if (~exist('E','var') || isempty(E))
-    E = []; Gw = []; Fw = [];
-else
-    if (~exist('Gw','var') && ~exist('Fw','var'))
-        error('Disturbance matrix E is specified, but not disturbance set.')
-    elseif (exist('Gw','var') && ~exist('Fw','var'))
-        error('Disturbance set incomplete: Matrix Gw given, but not vector Fw.')
-    elseif (~exist('Gw','var') && exist('Fu','var'))
-        error('Disturbance set incomplete: Vector Fw given, but not matrix Gw.')
-    elseif (~isempty(Gw) && ~isempty(Fw))
-        if (size(Gw,1)~=size(Fw,1))
-            error('Rows of Gw and Fw do not match.')
-        elseif (size(E,2)~=size(Gw,2))
-            error('Columns of E and Gw do not match.')
-        else
-            W = Polyhedron('H',[Gw Fw]);
-            if (~W.isBounded)
-                error('Disturbance set is unbounded.')
-            end
-        end
+% Check the disturbance matrix and set.
+if (isempty(E))
+    if (~isempty(Gw) || ~isempty(Fw))
+        error('Without disturbance, E, Gw, and Fw must all be empty.')
     end
+elseif (isempty(Gw) || isempty(Fw))
+    error('With disturbance, E, Gw, and Fw must all be nonempty.')
+elseif (size(E, 1) ~= n)
+    error('Rows of A and E do not match.')
+elseif (size(Gw, 2) ~= size(E, 2))
+    error('Columns of E and Gw do not match.')
+elseif (size(Gw, 1) ~= size(Fw, 1))
+    error('Rows of Gw and Fw do not match.')
+elseif (size(Fw, 2) ~= 1)
+    error('Fw must be a column vector.')
+else
+    W = Polyhedron('A', Gw, 'b', Fw);
+    if (~W.isBounded)
+        error('Disturbance set is unbounded.')
+    end
+end
+
 end
