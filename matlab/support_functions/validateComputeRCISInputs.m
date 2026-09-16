@@ -1,6 +1,6 @@
-function validateComputeRCISInputs(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw)
+function validateComputeRCISInputs(A, B, E, Gxu, Fxu, Gw, Fw)
 %% Authors: Tzanis Anevlavis.
-% Copyright (C) 2021, Tzanis Anevlavis.
+% Copyright (C) 2026, Tzanis Anevlavis.
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -26,36 +26,30 @@ function validateComputeRCISInputs(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw)
 %
 %% Description:
 % Validate the system, constraint, and disturbance dimensions accepted by
-% computeRCIS. Empty Gu and Fu indicate no input constraints. Empty E, Gw,
-% and Fw indicate no disturbance.
+% computeRCIS. Gxu constrains [x; u]. Empty E, Gw, and Fw indicate no
+% disturbance. Zero input columns in Gxu indicate state-only constraints.
 
-% Check the system and state constraints.
+validateattributes(A, {'numeric'}, {'2d', 'real', 'finite', 'nonempty'}, ...
+    mfilename, 'A');
+validateattributes(B, {'numeric'}, {'2d', 'real', 'finite', 'nonempty'}, ...
+    mfilename, 'B');
+validateattributes(Gxu, {'numeric'}, {'2d', 'real', 'finite'}, ...
+    mfilename, 'Gxu');
+validateattributes(Fxu, {'numeric'}, {'2d', 'real', 'finite'}, ...
+    mfilename, 'Fxu');
+
+% Check the system and joint state-input constraints.
 n = size(A, 1);
 if (size(A, 2) ~= n)
     error('A must be square.')
 elseif (size(B, 1) ~= n)
     error('Rows of A and B do not match.')
-elseif (size(Gx, 2) ~= n)
-    error('Columns of A (number of states) and Gx do not match.')
-elseif (size(Gx, 1) ~= size(Fx, 1))
-    error('Rows of Gx and Fx do not match.')
-elseif (~isempty(Fx) && size(Fx, 2) ~= 1)
-    error('Fx must be a column vector.')
-end
-
-% Check input constraints.
-if (~isempty(Gu) && isempty(Fu))
-    error('Input constraints incomplete: Matrix Gu given, but not vector Fu.')
-elseif (isempty(Gu) && ~isempty(Fu))
-    error('Input constraints incomplete: Vector Fu given, but not matrix Gu.')
-elseif (~isempty(Gu))
-    if (size(Gu, 1) ~= size(Fu, 1))
-        error('Rows of Gu and Fu do not match.')
-    elseif (size(Gu, 2) ~= size(B, 2))
-        error('Columns of B (number of inputs) and Gu do not match.')
-    elseif (size(Fu, 2) ~= 1)
-        error('Fu must be a column vector.')
-    end
+elseif (size(Gxu, 2) ~= n + size(B, 2))
+    error('cis2m:validateComputeRCISInputs:InvalidJointColumns', ...
+        'Gxu must have n + m columns, ordered as [x; u].');
+elseif (size(Gxu, 1) ~= size(Fxu, 1) || size(Fxu, 2) ~= 1)
+    error('cis2m:validateComputeRCISInputs:InvalidJointBounds', ...
+        'Fxu must be a column vector with one entry per row of Gxu.');
 end
 
 % Check the disturbance matrix and set.
@@ -74,8 +68,14 @@ elseif (size(Gw, 1) ~= size(Fw, 1))
 elseif (size(Fw, 2) ~= 1)
     error('Fw must be a column vector.')
 else
+    validateattributes(E, {'numeric'}, {'2d', 'real', 'finite'}, mfilename, 'E');
+    validateattributes(Gw, {'numeric'}, {'2d', 'real', 'finite'}, mfilename, 'Gw');
+    validateattributes(Fw, {'numeric'}, {'2d', 'real', 'finite'}, mfilename, 'Fw');
     W = Polyhedron('A', Gw, 'b', Fw);
-    if (~W.isBounded)
+    if (W.isEmptySet())
+        error('cis2m:validateComputeRCISInputs:EmptyDisturbance', ...
+            'Disturbance set must be nonempty. Use E = [], Gw = [], Fw = [] for no disturbance.');
+    elseif (~W.isBounded)
         error('Disturbance set is unbounded.')
     end
 end

@@ -1,6 +1,6 @@
-function [RCIS, A_hd] = computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, options)
+function [RCIS, A_lifted] = computeRCIS(A, B, E, Gxu, Fxu, Gw, Fw, options)
 %% Authors: Tzanis Anevlavis
-% Copyright (C) 2021, Tzanis Anevlavis
+% Copyright (C) 2026, Tzanis Anevlavis
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -32,16 +32,16 @@ function [RCIS, A_hd] = computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, options)
 %
 % Inputs:   A, B, E : matrices defining the discrete-time linear system:
 %                           x+ = Ax + Bu + Ew.
-%           Gx, Fx: define the safe set:
-%                           {x \in \R^n | Gx x <= Fx}.
-%           Gu, Fu: define the input constraints:
-%                           {u \in \R^m | Gu u <= Fu}.
-%                   If no input constraints, use: Gu = [] and Fu = [].
+%           Gxu, Fxu: define the joint state-input safe set:
+%                           {(x, u) | Gxu * [x; u] <= Fxu}.
+%                   Gxu has n + m columns.
+%                   Separate constraints can be combined as
+%                   Gxu = blkdiag(Gx, Gu), Fxu = [Fx; Fu].
 %           Gw, Fw: define the disturbance set:
 %                           {w \in \R^k | Gw w <= Fw}.
 %                  If no disturbance use: E = [], Gw = [], and Fw = [].
 %
-% Name-value options (after the nine positional matrix arguments):
+% Name-value options (after the seven positional matrix arguments):
 %           lambda:             positive integer loop length (default: []).
 %           tau:                nonnegative integer transient length (default: 0).
 %           hierarchy_level:    positive integer hierarchy level (default: []).
@@ -53,7 +53,7 @@ function [RCIS, A_hd] = computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, options)
 %           The sequence length q is hierarchy_level in hierarchy mode,
 %           or tau + lambda in single-component mode.
 %
-% Example:  computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, lambda=3, tau=2)
+% Example:  computeRCIS(A, B, E, Gxu, Fxu, Gw, Fw, lambda=3, tau=2)
 %           Requires R2021a for name=value syntax; R2019b and R2020 releases
 %           can use 'lambda', 3, 'tau', 2 instead.
 %
@@ -61,23 +61,24 @@ function [RCIS, A_hd] = computeRCIS(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw, options)
 %           If is_implicit = 0, then:
 %                   explicit RCIS = {x \in \R^n | rcisA x <= rcisb}.
 %           If is_implicit = 1, then:
-%                   RCIS is represented in the lifted state-input space.
-%                   Its dimension depends on q and on whether input constraints
-%                   require state extension. Hierarchy mode returns one
-%                   Polyhedron per (tau, lambda) pair, ordered by
-%                   lambda = 1, ..., q.
-%           A_hd: state-transition matrix associated with the returned implicit
-%                 representation. In hierarchy mode, this is the matrix for the
-%                 last component (tau = 0, lambda = q).
+%                   RCIS is in [x; v] coordinates, of dimension n + m*q.
+%                   Virtual inputs v are grouped by channel, q entries each.
+%                   Given z = T*x, r = H*v, the physical input is
+%                   u = Bm\(H*v - Am*T*x).
+%                   Hierarchy mode returns one Polyhedron per (tau, lambda)
+%                   pair, ordered by lambda = 1, ..., q.
+%           A_lifted: nominal lifted dynamics in [x; v] coordinates, including
+%                     when is_implicit is false. Disturbances enter via [E; 0].
+%                     For a single component, this is one sparse matrix. In
+%                     hierarchy mode, this is a cell array where A_lifted{i}
+%                     corresponds to RCIS(i), lambda = i, and tau = q - i.
 
 arguments
     A
     B
     E
-    Gx
-    Fx
-    Gu
-    Fu
+    Gxu
+    Fxu
     Gw
     Fw
     options.lambda = []
@@ -114,91 +115,59 @@ else
         'Specify a nonempty lambda or hierarchy_level.');
 end
 
-validateComputeRCISInputs(A, B, E, Gx, Fx, Gu, Fu, Gw, Fw);
+validateComputeRCISInputs(A, B, E, Gxu, Fxu, Gw, Fw);
 
 % Use sparse matrices for faster computations.
 A = sparse(A);
 B = sparse(B);
-Gx = sparse(Gx);
-Fx = sparse(Fx);
-Gu = sparse(Gu);
-Fu = sparse(Fu);
+Gxu = sparse(Gxu);
+Fxu = sparse(Fxu);
 E = sparse(E);
 Gw = sparse(Gw);
 Fw = sparse(Fw);
 
-%% Convert system in Brunovsky normal form space and extend state space.
-% TODO: extended space not needed with the latest formulation.
-% Should optimize the code.
-[Ac, Bc, Ec, Gc, Fc, Pmat, nmax, Am, Bm, isExtended] = transformToBrunovskyNormalForm(A, B, E, Gx, Fx, Gu, Fu);
+%% Transform the system and joint constraints into Brunovsky coordinates.
+[Ac, Bc, Ec, Gc, Fc, T, nmax] = transformToBrunovskyNormalForm(A, B, E, Gxu, Fxu);
 
 %% Construct shrunk safe sets.
 [G_k, F_k] = constructShrunkSafeSetConstraints(Ac, Bc, Gc, Fc, Ec, Gw, Fw, q, nmax);
 
-%% Implicit Controlled Invariant Set.
-if (~should_compute_full_hierarchy)
-    % Not full hierarchy, compute (R)CIS_(tau, lambda).
-    [rcisLiftedA, rcisLiftedb, A_hd, K, P] = computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
-    implicitRCIS = Polyhedron('H',[rcisLiftedA, rcisLiftedb]);
+%% Compute each lasso component and return it in original state coordinates.
+if (should_compute_full_hierarchy)
+    % This is an array of `lambda` values for the given hierarchy level.
+    periods = 1:q;
+    A_lifted = cell(size(periods));
 else
-    % Full hierarchy computation at level q.
-    for lambda = 1:q
-        tau = q - lambda;
-        [rcisLiftedA, rcisLiftedb, A_hd, K, P] = computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
-        implicitRCIS(lambda) = Polyhedron('H',[rcisLiftedA, rcisLiftedb]);
+    % This is a scalar corresponding to a specific `(tau, lambda)` pair.
+    periods = lambda;
+end
+
+n = size(A, 2);
+m = size(B, 2);
+T_lift = blkdiag(T, speye(m * q));
+for i = 1:numel(periods)
+    lambda = periods(i);
+    tau = q - lambda; % Recover `tau` for the specific `(tau, lambda)` pair.
+
+    % Compute the lifted RCIS and companion dynamical system.
+    [rcisLiftedA, rcisLiftedb, A_comp] = ...
+        computeImplicitClosedFormRCIS(Ac, Bc, G_k, F_k, lambda, tau, nmax);
+
+    % Express in original-state lifted coordinates `[x; v]`:
+    % [z; v] = T_lift * [x; v] = [T, 0; 0, I] * [x; v] = [T x; v]
+    rcisLifted = Polyhedron('A', rcisLiftedA * T_lift, 'b', rcisLiftedb);
+    if (is_implicit)
+        RCIS(i) = rcisLifted;
+    else
+        RCIS(i) = rcisLifted.projection(1:n, 'ifourier');
+    end
+    % Transform the companion dynamical system to the original-state lifted coordinates.
+    A_comp_original = T_lift \ (A_comp * T_lift);
+    if (should_compute_full_hierarchy)
+        A_lifted{i} = A_comp_original;
+    else
+        A_lifted = A_comp_original;
     end
 end
 
-%% Output:
-for i = 1:length(implicitRCIS)
-    rcisLiftedA = implicitRCIS(i).A;
-    rcisLiftedb = implicitRCIS(i).b;
-    if (is_implicit)
-        % Return implicit (R)CIS.
-        if (isExtended)
-            % Extract state input matrices in [z,u,v], z\in\R^n, u\in\R^m, v\in\R^(m*q).
-            n = size(Ac, 2) - size(Bc, 2); % Dimension of original space.
-            m = size(Bc, 2);
-            Gz = rcisLiftedA(:, 1:n);
-            Gv = rcisLiftedA(:, (n + 1):(n + m));
-            Gvirtual = rcisLiftedA(:, (n + m + 1):end);
-            % Map back from Brunovsky to original space
-            Gstate = Gz * Pmat + Gv * Am * Pmat;
-            Ginput = Gv * Bm;
-        else
-            n = size(Ac, 2);
-            m = size(Bc, 2);
-            % Extract state input matrices in y = (z,v)
-            Gz = rcisLiftedA(:, 1:n);
-            Gvirtual = rcisLiftedA(:, (n + 1):end);
-            % Map back from Brunovsky to original space
-            Gstate = Gz * Pmat;
-            Ginput = Gvirtual(:, 1:m);
-            Gvirtual = Gvirtual(:, (m + 1):end);
-        end
-        rcisA = [Gstate Ginput Gvirtual];
-        rcisb = rcisLiftedb;
-
-        % Transform A_hd from Brunovsky space to original space.
-        % x+ = Ax + Bu
-        %    u = -inv(Bm) Am T x + inv(Bm) v
-        % => u+ = -inv(Bm) Am T A x -inv(Bm) Am T B u + inv(Bm) K {virtual}
-        % and {virtual}+ = P virtual.
-        A_hd = [A B sparse(size(A, 1), size(Gvirtual, 2));
-                -Bm\Am*Pmat*A -Bm\Am*Pmat*B Bm\K;
-                sparse(size(P, 1), size(A, 2) + size(B, 2)) P];
-
-    else
-        % Return explicit (R)CIS.
-        % Use MPT3 to project back to the original space.
-        rcisLifted = Polyhedron('A', rcisLiftedA, 'b', rcisLiftedb);
-        rcis = rcisLifted.projection(1:size(A, 2), 'ifourier');  % 'ifourier' seems to be better than 'mplp' for many cases.
-        rcisA = rcis.A;
-        rcisb = rcis.b;
-        % Return to original coordinates:
-        rcisA = rcisA * Pmat;
-        disp('cis2m:computeRCIS: Projection done!')
-    end
-
-    RCIS(i) = Polyhedron('H', [rcisA, rcisb]);
 end

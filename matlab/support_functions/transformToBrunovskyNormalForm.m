@@ -1,6 +1,6 @@
-function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = transformToBrunovskyNormalForm(A,B,E,G,F,Gu,Fu)
+function [Ac, Bc, Ec, Gc, Fc, T, nmax, Am, Bm] = transformToBrunovskyNormalForm(A, B, E, Gxu, Fxu)
 %% Authors: Tzanis Anevlavis.
-% Copyright (C) 2021, Tzanis Anevlavis.
+% Copyright (C) 2026, Tzanis Anevlavis.
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -27,19 +27,34 @@ function [Ac,Bc,Ec,Gc,Fc,Pmat,nmax,Am,Bm,isExtended] = transformToBrunovskyNorma
 %% Description:
 % Converts a linear system and a corresponding set of constraints into the
 % Brunovsky normal form space.
+% For a controllable linear system:
+%           x+ = A x + B u,
+% perform a coordinate change and linear state feedback:
+%           z = T x
+%           r = Am T x + Bm u
+% so that the resulting system is:
+%           z+ = Ac z + Bc r ,
+% where Ac and Bc are in Brunovsky canonical (companion) form.
+%
+% The function applies the same transformation to any state / input constraints.
+% Constraints Gxu * [x; u] <= Fxu become Gc * [z; r] <= Fc.
+
+%% Compute the required matrices for the coordinate change and the state feedback.
+% The goal is to compute the similarity transformation T, and the matrices Am and Bm.
 
 n = size(A,2);  % number of states
 m = size(B,2);  % number of inputs
 
-sparse(A); sparse(B);
+sparse(A);
+sparse(B);
 
 % Controllability matrix:
 Co = ctrb(A,B);
 rankCo = rank(Co);
 if (rankCo<n)
-    warning('System not controllable.');
-    disp(['System dimension:',num2str(n),'.']);
-    disp(['Controllability rank:',num2str(rankCo),'.']);
+    error('cis2m:transformToBrunovskyNormalForm:UncontrollableSystem', ...
+        ['System must be controllable. State dimension is %d, but the ' ...
+        'controllability matrix has rank %d.'], n, rankCo);
 end
 
 % Controllability Indices
@@ -90,21 +105,21 @@ if (cond(full(Cbar))>1e14)
     warning('Condition number > 1e14.')
 end
 
-% Similarity transformation matrix Pmat:
+% Similarity transformation matrix T:
 CbarInv = speye(n)/Cbar;  % more stable than inv(Cbar).
-Pmat = zeros(n,n);
+T = zeros(n,n);
 q = zeros(m,n);
 idx = 1;
 for v = 1:m
     q(v,:) = CbarInv(sigma(v),:);
     A_curr = speye(n);
     for i = 1:Mu(v)
-        Pmat(idx,:) = q(v,:) * A_curr;
+        T(idx,:) = q(v,:) * A_curr;
         A_curr = A_curr * A;
         idx = idx + 1;
     end
 end
-Pmat = sparse(Pmat);
+T = sparse(T);
 
 % Bm
 Bm = zeros(m,n);
@@ -117,48 +132,34 @@ Bm = sparse(Bm);
 % Am
 % Am = [];
 Am = zeros(m,n);
-tmpA = (Pmat * A) / Pmat;
+tmpA = (T * A) / T;
 for i = 1:m
     Am(i,:) = tmpA(sigma(i),:);
 end
 Am = sparse(Am);
-% u = -inv(Bm) * Am * x + inv(Bm) * v
 
-% System in Brunovsky Normal Form after feedback:
-Ac = (Pmat * A) / Pmat - ((Pmat * B) / Bm) * Am;
-Bc = (Pmat * B) / Bm;
+%% Transformation in Brunovsky normal form.
+% Perform:
+%           z = T x
+%           r = Am T x + Bm u
+% so that the resulting system is:
+%           z+ = Ac z + Bc r .
+
+% System in Brunovsky normal form after feedback.
+Ac = (T * A) / T - ((T * B) / Bm) * Am;
+Bc = (T * B) / Bm;
 if (~isempty(E))
-    Ec = Pmat * E;
+    Ec = T * E;
 else
     Ec = [];
 end
 nmax = max(Mu);
 
-% Domain in Brunovsky coordinates:
-Gc = G/Pmat;
-Fc = F;
+% Substitute x = T^{-1} z and u = Bm^{-1} (r - Am T x)
+% in the joint constraints.
+Gr = Gxu(:, (n + 1):end) / Bm;
+Gz = Gxu(:, 1:n) / T - Gr * Am;
+Gc = [Gz Gr];
+Fc = Fxu;
 
-%% Input constraints:
-% If there are input constraints, we extend the system by one dimension to
-% incorporate them.
-isExtended = false;
-if (~isempty(Gu))
-    isExtended = true;
-    % u = -inv(Bm)Am z + inv(Bm)v = inv(Bm)[-Am I] [z,v]
-    alpha_e = [-(speye(m)/Bm)*Am speye(m)/Bm];
-    % Extended system:
-    Ae = [Ac Bc; sparse(size(Bc,2),size(Ac,2)+size(Bc,2))];
-    Be = [sparse(size(Ac,1),size(Bc,2)); speye(size(Bc,2))];
-    if (~isempty(Ec))
-        Ee = [Ec; sparse(size(Bc,2),size(Ec,2))];
-    else
-        Ee = [];
-    end
-    % Extended safe set:
-    Ge = [Gc sparse(size(Gc,1),size(Gu,2)); Gu * alpha_e];
-    Fe = [Fc; Fu];
-
-    Ac = Ae; Bc = Be; Ec = Ee; Gc = Ge; Fc = Fe;
-
-    nmax = nmax+1;
 end
