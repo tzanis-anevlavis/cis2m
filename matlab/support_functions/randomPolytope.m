@@ -1,4 +1,4 @@
-function P = randomPolytope(n,k)
+function P = randomPolytope(n, k)
 %% Authors: Tzanis Anevlavis
 % Copyright (C) 2020, Tzanis Anevlavis
 %
@@ -25,7 +25,26 @@ function P = randomPolytope(n,k)
 %
 %
 %% Description:
-% Computes a random polytope of dimension n with k constraints. 
+% Computes a random full-dimensional polytope in R^n with k constraints.
+
+if (~isnumeric(n) || ~isscalar(n) || ~isreal(n) || ~isfinite(n) || ...
+        n < 1 || n ~= fix(n))
+    error('cis2m:randomPolytope:InvalidDimension', ...
+        'n must be a finite positive integer scalar.');
+end
+if (~isnumeric(k) || ~isscalar(k) || ~isreal(k) || ~isfinite(k) || ...
+        k < 1 || k ~= fix(k))
+    error('cis2m:randomPolytope:InvalidConstraintCount', ...
+        'k must be a finite positive integer scalar.');
+end
+if (k < n + 1)
+    error('cis2m:randomPolytope:InsufficientConstraints', ...
+        'A bounded full-dimensional polytope in R^n requires k >= n + 1.');
+end
+
+% Normalize integer-valued numeric classes before using them as dimensions.
+n = double(n);
+k = double(k);
 
 P = Polyhedron('H',[1 1]); % Initialize: one dimensional halfspace.
 

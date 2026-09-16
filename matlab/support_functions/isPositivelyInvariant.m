@@ -1,6 +1,6 @@
 function [isInv] = isPositivelyInvariant(X,A)
 %% Authors: Tzanis Anevlavis.
-% Copyright (C) 2021, Tzanis Anevlavis.
+% Copyright (C) 2026, Tzanis Anevlavis.
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@ function [isInv] = isPositivelyInvariant(X,A)
 % along with this program. If not, see <http://www.gnu.org/licenses/>.
 %
 %
-% This code is part of the Controlled Invariance in 2 Moves repository 
+% This code is part of the Controlled Invariance in 2 Moves repository
 % (CIS2M), and is publicly available at: https://github.com/janis10/cis2m .
 %
 % For any comments contact Tzanis Anevlavis @ t.anevlavis@ucla.edu.
@@ -26,14 +26,11 @@ function [isInv] = isPositivelyInvariant(X,A)
 %
 %% Description:
 % Check if a polyhedron X is positively invariant with respect to a linear system:
-% x^+ = A x. 
+% x^+ = A x.
 
-% State constraints:
-Gx = X.A;
-Fx = X.b;
-% Concatenate constraints:
-matPre = [Gx*A Fx];
-% Compute Pre:
-Pre = Polyhedron('H', matPre);
+% Pull both inequality and equality constraints back through x+ = A*x.
+Pre = Polyhedron( ...
+    'A', X.A*A, 'b', X.b, ...
+    'Ae', X.Ae*A, 'be', X.be);
 
 isInv = (X <= Pre);

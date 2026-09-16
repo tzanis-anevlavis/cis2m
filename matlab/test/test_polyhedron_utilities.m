@@ -1,0 +1,200 @@
+function tests = test_polyhedron_utilities
+    tests = functiontests(localfunctions);
+end
+
+function setupOnce(testCase)
+    matlab_dir = fileparts(fileparts(mfilename('fullpath')));
+    testCase.addTeardown(@path, path);
+    addpath(matlab_dir, fullfile(matlab_dir, 'support_functions'));
+    assumeTrue(testCase, exist('Polyhedron', 'class') == 8 && ...
+        exist('mpt_init', 'file') == 2, 'Requires MPT3.');
+    mpt_init;
+end
+
+function testPositiveInvariance(testCase)
+    % X is the two-dimensional unit box. A strict contraction maps X into
+    % its interior, while a quarter-turn rotation maps X exactly onto itself.
+    X = unitBox(2);
+    verifyTrue(testCase, isPositivelyInvariant(X, 0.5*eye(2)));
+    verifyTrue(testCase, isPositivelyInvariant(X, [0 -1; 1 0]));
+
+    % Expanding either coordinate beyond the corresponding box facet breaks
+    % positive invariance, even though the other coordinate remains stable.
+    verifyFalse(testCase, isPositivelyInvariant(X, diag([1.01 0.5])));
+end
+
+function testPositiveInvarianceOfLowerDimensionalSet(testCase)
+    % Encode X = {(x1,x2) | x1 = 0, |x2| <= 1} using paired inequalities.
+    % Scaling along x1 is irrelevant on X, while contraction along x2 keeps
+    % every point in the line segment.
+    X = Polyhedron('A', [1 0; -1 0; 0 1; 0 -1], 'b', [0; 0; 1; 1]);
+    verifyTrue(testCase, isPositivelyInvariant(X, diag([2 0.5])));
+
+    % Mapping x2 into x1 moves all nonzero points off the segment.
+    verifyFalse(testCase, isPositivelyInvariant(X, [0 1; 0 0.5]));
+end
+
+function testPositiveInvariancePreservesEqualityConstraints(testCase)
+    % Use the affine line segment x1 = 1, |x2| <= 1 so the test exercises
+    % both the equality normal Ae and its nonzero right-hand side be.
+    X = Polyhedron( ...
+        'A', [0 1; 0 -1], 'b', [1; 1], ...
+        'Ae', [1 0], 'be', 1);
+
+    % The first map preserves x1 = 1 and contracts x2. The second adds x2
+    % to x1, violating the affine equality for every point with x2 ~= 0.
+    verifyTrue(testCase, isPositivelyInvariant(X, diag([1 0.5])));
+    verifyFalse(testCase, isPositivelyInvariant(X, [1 1; 0 0.5]));
+end
+
+function testControlledInvarianceWithBoundedInputs(testCase)
+    % For x+ = 2*x + u on X = [-1,1], U = [-1,1] supplies exactly enough
+    % authority at both endpoints: choose u = -x.
+    X = unitBox(1);
+    U = Polyhedron('A', [1; -1], 'b', [1; 1]);
+    verifyTrue(testCase, isInvariant(X, U, 2, 1));
+
+    % With |u| <= 0.5, the successor of x = 1 is at least 1.5 and leaves X.
+    small_U = Polyhedron('A', [1; -1], 'b', [0.5; 0.5]);
+    verifyFalse(testCase, isInvariant(X, small_U, 2, 1));
+end
+
+function testControlledInvarianceWithUnconstrainedInput(testCase)
+    X = unitBox(1);
+
+    % Empty U denotes an unconstrained input. Full actuation can cancel an
+    % arbitrarily unstable scalar A, so the first system is controlled invariant.
+    verifyTrue(testCase, isInvariant(X, [], 10, 1));
+
+    % With B = 0, controlled invariance reduces to positive invariance.
+    verifyTrue(testCase, isInvariant(X, [], 1, 0));
+    verifyFalse(testCase, isInvariant(X, [], 2, 0));
+end
+
+function testControlledInvarianceWithEmptyInputSet(testCase)
+    X = unitBox(1);
+
+    % A Polyhedron object with inconsistent inequalities represents an empty
+    % admissible-input set. It is distinct from U = [], which means that the
+    % input is unconstrained, and no state can have an admissible successor.
+    empty_U = Polyhedron('A', [1; -1], 'b', [0; -1]);
+    verifyTrue(testCase, empty_U.isEmptySet());
+    verifyFalse(testCase, isInvariant(X, empty_U, 1, 1));
+end
+
+function testControlledInvariancePreservesEqualityConstraints(testCase)
+    % X is the affine line segment x1 = 1, |x2| <= 1. For
+    % x1+ = x2 + u and x2+ = 0.5*x2, choosing u = 1 - x2 preserves X
+    % while respecting 0 <= u <= 2.
+    X = Polyhedron( ...
+        'A', [0 1; 0 -1], 'b', [1; 1], ...
+        'Ae', [1 0], 'be', 1);
+    U = Polyhedron('A', [1; -1], 'b', [2; 0]);
+    A = [0 1; 0 0.5];
+    B = [1; 0];
+    verifyTrue(testCase, isInvariant(X, U, A, B));
+
+    % Restricting the input to u = 1 works only at x2 = 0. The full segment
+    % is therefore not controlled invariant. The nonzero equality also checks
+    % that isInvariant preserves both U.Ae and U.be in the predecessor.
+    fixed_input = Polyhedron('Ae', 1, 'be', 1);
+    verifyFalse(testCase, isInvariant(X, fixed_input, A, B));
+end
+
+function testRandomPolytopePropertiesAndReproducibility(testCase)
+    previous_rng = rng;
+    testCase.addTeardown(@rng, previous_rng);
+    rng(731, 'twister');
+
+    % The generator returns exactly k inequalities G*x <= 1. Since every
+    % right-hand side is positive, the origin lies strictly in the result.
+    first = randomPolytope(2, 8);
+    verifyRandomPolytopeProperties(testCase, first, 2, 8);
+
+    % Resetting the random stream must reproduce every sampled normal,
+    % including all rejected unbounded candidates generated by the while loop.
+    rng(731, 'twister');
+    second = randomPolytope(2, 8);
+    verifyEqual(testCase, second.A, first.A);
+    verifyEqual(testCase, second.b, first.b);
+end
+
+function testRandomPolytopeAcrossDimensions(testCase)
+    previous_rng = rng;
+    testCase.addTeardown(@rng, previous_rng);
+    rng(904, 'twister');
+
+    % Exercise the minimum useful one-dimensional case, the exact geometric
+    % lower bound k = n + 1 in three dimensions, and larger redundant H-reps.
+    cases = [1 2; 3 4; 3 10; 5 16]; % [dimension, constraint count]
+    for i = 1:size(cases, 1)
+        n = cases(i, 1);
+        k = cases(i, 2);
+        P = randomPolytope(n, k);
+        verifyRandomPolytopeProperties(testCase, P, n, k);
+    end
+end
+
+function testRandomPolytopeRejectsInvalidDimension(testCase)
+    invalid_dimensions = {
+        '3';       % Nonnumeric dimension.
+        [2 3];     % Nonscalar dimension.
+        2 + 1i;    % Complex dimension.
+        NaN;       % Nonfinite NaN dimension.
+        Inf;       % Nonfinite infinite dimension.
+        0;         % Zero dimension.
+        -2;        % Negative dimension.
+        1.5        % Noninteger dimension.
+    };
+
+    for i = 1:numel(invalid_dimensions)
+        verifyError(testCase, @() randomPolytope(invalid_dimensions{i}, 6), ...
+            'cis2m:randomPolytope:InvalidDimension');
+    end
+end
+
+function testRandomPolytopeRejectsInvalidConstraintCount(testCase)
+    invalid_constraint_counts = {
+        '6';       % Nonnumeric constraint count.
+        [5 6];     % Nonscalar constraint count.
+        6 + 1i;    % Complex constraint count.
+        NaN;       % Nonfinite NaN constraint count.
+        Inf;       % Nonfinite infinite constraint count.
+        0;         % Zero constraints.
+        -1;        % Negative constraint count.
+        5.5        % Noninteger constraint count.
+    };
+
+    for i = 1:numel(invalid_constraint_counts)
+        verifyError(testCase, @() randomPolytope(3, invalid_constraint_counts{i}), ...
+            'cis2m:randomPolytope:InvalidConstraintCount');
+    end
+end
+
+function testRandomPolytopeRejectsInsufficientConstraints(testCase)
+    % Because every generated inequality has right-hand side one, the origin
+    % is an interior point. The result is therefore full dimensional, and at
+    % least n + 1 halfspaces are necessary for it to be bounded.
+    verifyError(testCase, @() randomPolytope(1, 1), ...
+        'cis2m:randomPolytope:InsufficientConstraints');
+    verifyError(testCase, @() randomPolytope(4, 4), ...
+        'cis2m:randomPolytope:InsufficientConstraints');
+end
+
+function X = unitBox(n)
+    X = Polyhedron('A', [eye(n); -eye(n)], 'b', ones(2*n, 1));
+end
+
+function verifyRandomPolytopeProperties(testCase, P, n, k)
+    % Check the generator's representation contract as well as its geometric
+    % postconditions. In particular, every generated polytope contains zero
+    % because all k bounds are one.
+    verifyEqual(testCase, P.Dim, n);
+    verifyFalse(testCase, P.isEmptySet());
+    verifyTrue(testCase, P.isBounded());
+    verifyEqual(testCase, size(P.A), [k n]);
+    verifyEqual(testCase, P.b, ones(k, 1));
+    verifyGreaterThanOrEqual(testCase, P.A, -0.5*ones(k, n));
+    verifyLessThan(testCase, P.A, 0.5*ones(k, n));
+    verifyTrue(testCase, P.contains(zeros(n, 1)));
+end
