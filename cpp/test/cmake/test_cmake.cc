@@ -1,10 +1,17 @@
-#include <iostream>
-#include <cis2m/hpolyhedron.hpp>
 #include <Eigen/Dense>
 
+#include <cis2m/brunovskytransformation.hpp>
+#include <cis2m/cis_generator.hpp>
+#include <cis2m/hpolyhedron.hpp>
+
 int main() {
-	Eigen::MatrixXd A(Eigen::MatrixXd(Eigen::MatrixXd::Identity(3,3)));
-	Eigen::VectorXd B(Eigen::VectorXd(Eigen::VectorXd::Zero(3,1)));
-	cis2m::HPolyhedron poly(A, B);
-	return 0;
+    const Eigen::MatrixXd A = Eigen::MatrixXd::Zero(1, 1);
+    const Eigen::MatrixXd B = Eigen::MatrixXd::Ones(1, 1);
+    const cis2m::BrunovskyTransformation transformation(A, B);
+
+    const Eigen::MatrixXd G = Eigen::MatrixXd::Identity(1, 1);
+    const Eigen::VectorXd F = Eigen::VectorXd::Zero(1);
+    const cis2m::HPolyhedron polyhedron(G, F);
+
+    return (transformation.IsValid() && polyhedron.IsValid()) ? 0 : 1;
 }
