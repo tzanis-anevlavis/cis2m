@@ -1,182 +1,145 @@
 #pragma once
 
+#include <cstddef>
+#include <vector>
+
 #include <Eigen/Dense>
-#include "brunovskyform.hpp"
+
+#include "brunovskytransformation.hpp"
 #include "hpolyhedron.hpp"
 
 namespace cis2m {
-class CISGenerator {
-	public:
-		/**
-		 * \brief Constructor with only dynamics information
-		 * x_new = Ad * x_old + Bd * u
-		 *
-		 * \param[in]	Ad	Dynamics matrix of the system		
-		 * \param[in]	Bd	Input matrix of the system		
-		 *
-		 */
-		CISGenerator(const Eigen::MatrixXd& Ad,const Eigen::MatrixXd& Bd);
 
-
-		/**
-		 * \brief Constructor with only dynamics information
-		 * x_new = Ad * x_old + Bd * u + Ed * w
-		 *
-		 * \param[in]	Ad	Dynamics matrix of the system		
-		 * \param[in]	Bd	Input matrix of the system		
-		 * \param[in]	Ed	Disturbance matrix
-		 *
-		 */
-		CISGenerator(const Eigen::MatrixXd& Ad,const Eigen::MatrixXd& Bd, const Eigen::MatrixXd& Ed);
-
-
-		/// Destructor
-		~CISGenerator();
-
-
-		/**
-		 * \brief Add disturbance information 
-		 *
-		 * \param[in]	ds	Disturbance set described as a HPolyhedron		
-		 *
-		 * \return 	void	
-		 *
-		 */
-		void AddDisturbanceSet(const HPolyhedron& ds);
-
-
-		/**
-		 * \brief Add input constraints set
-		 *
-		 * \param[in]	ics	Input Constraints described as a HPolyhedron		
-		 *
-		 * \return 	void	
-		 *
-		 */
-		void AddInputConstraintsSet(const HPolyhedron& ics);
-
-
-		/**
-		 * \brief Compute the Control Invariant Set
-		 *
-		 * \param[in]	SafeSet 	Safe set described as a HPolyhedron	
-		 * \param[in]	L		Level of Hierarchy 
-		 * \param[in]	T		Transient before L 
-		 *
-		 * \return	Control Invariant Set as a HPolyhedron
-		 *
-		 */
-		void computeCIS(const HPolyhedron& SafeSet, int L, int T);
-
-
-		/**
-		 * \brief Fetch the state part of the Constraint Coefficients
-		 *
-		 * \return	Control Invariant Set as a HPolyhedron
-		 *
-		 */
-		HPolyhedron Fetch_CIS();
-
-
-		/**
-		 * \brief Fetch the state part of the Constraint Coefficients
-		 *
-		 * \return	Eigen::MatrixXd 
-		 *
-		 */
-		Eigen::MatrixXd Fetch_A_State();
-
-
-		/**
-		 * \brief Fetch the input part of the Constraint Coefficients
-		 *
-		 * \return	Eigen::MatrixXd 
-		 *
-		 */
-		Eigen::MatrixXd Fetch_A_Input();
-
-	
-		/**
-		 * \brief Fetch the virtual input part of the Constraint Coefficients
-		 *
-		 * \return	Eigen::MatrixXd 
-		 *
-		 */
-		Eigen::MatrixXd Fetch_A_Virtual();
-
-
-		/**
-		 * \brief Compute the input in the Brunovksy coordinates
-		 * 
-		 * \param[in]	u	Input in the original coordinates	
-		 * \param[in]	x	State in the original coordinates	
-		 *
-		 * \return	Eigen::VectorXd	Input in Brunovksy coordinates
-		 */
-		Eigen::VectorXd TransformU2B(const Eigen::VectorXd& u, const Eigen::VectorXd& x);
-
-
-		/**
-		 * \brief Compute the input in the Original coordinates
-		 * 
-		 * \param[in]	u	Input in the Brunovksy coordinates	
-		 * \param[in]	x	State in the original coordinates	
-		 *
-		 * \return	Eigen::VectorXd	Input in Original coordinates
-		 */
-		Eigen::VectorXd TransformU2O(const Eigen::VectorXd& u, const Eigen::VectorXd& x);
-
-
-		
-		/**
-		 * \brief Get the size of the virtual input 
-		 */
-		int GetExtendedDim() const;
-
-		/**
-		 * \brief Get the size of the state
-		 */
-		int GetStateDim() const;
-
-		int GetLevel() const;
-
-	private:
-
-		int StateDim_;
-		int NumberInputs_;
-		int DisturbanceDim_;
-
-		int ExtendedInputDim_;
-		
-		int Level_;
-		int Transient_;
-
-		bool ThereAreInputConstraints_;
-
-		HPolyhedron InputCnstrSet_;
-		HPolyhedron DisturbanceSet_;
-
-		Eigen::MatrixXd A_lifted_;
-
-		HPolyhedron CIS_;
-
-		Eigen::MatrixXd Ed_BR_;
-
-		Eigen::MatrixXd ExtendedU2U_;
-
-		/**
-		 * \brief Reference to the Brunovsky Form Transformation Class
-		 */
-		BrunovskyForm* brunovsky_form_;
-
-		void Reset();
-
-		void ComputeLiftedSystem(int L, int T);
-	
-		std::vector<HPolyhedron> ComputeShrinkedSafeSetsSequence(const HPolyhedron& ss);
-
-		void GenerateBrunovksyForm(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
-
-		bool cis_computed_;
+/**
+ * \brief Parameters of a (tau, lambda)-lasso component.
+ *
+ *   - `lambda` must be positive and `tau` nonnegative.
+ *   - A positive `hierarchy_level` computes all `lambda = 1, ..., hierarchy_level`,
+ *     with `tau = hierarchy_level - lambda`;
+ *
+ * If hierarchy level is specified then any given tau and lambda are ignored.
+ */
+struct CISOptions {
+    std::size_t tau = 0;
+    std::size_t lambda = 0;
+    std::size_t hierarchy_level = 0;
+    bool is_implicit = true;
 };
+
+/**
+ * \brief One component of the controlled invariant set construction.
+ *
+ * When `is_implicit` is true, set is in [x; v] coordinates, where `v` has `m * q`
+ * entries grouped by input channel and `q = tau + lambda`.
+ * Otherwise, set is the projection onto x.
+ * The lifted dynamics and input maps always use [x; v] coordinates:
+ *
+ *     [x+; v+] = lifted_dynamics * [x; v] + lifted_disturbance * w,
+ *            u = input_from_state * x + input_from_virtual * v.
+ * In nominal mode, lifted_disturbance has zero columns, even if E was
+ * supplied when constructing the generator.
+ */
+struct CISComponent {
+    HPolyhedron set;
+    Eigen::MatrixXd lifted_dynamics;
+    Eigen::MatrixXd lifted_disturbance;
+    Eigen::MatrixXd input_from_state;
+    Eigen::MatrixXd input_from_virtual;
+    std::size_t tau = 0;
+    std::size_t lambda = 0;
+    bool is_implicit = true;
+};
+
+/**
+ * \brief Closed-form implicit RCIS generator for a controllable linear system.
+ *
+ * The system is `x+ = A x + B u + E w`. Omit `E` for a nominal system.
+ * Construction rejects invalid, uncontrollable systems or rank-deficient `B`.
+ * Compute rejects invalid constraints and numerical failures with exceptions.
+ */
+class ControlledInvariantSetGenerator {
+public:
+    ControlledInvariantSetGenerator(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B);
+    ControlledInvariantSetGenerator(
+        const Eigen::MatrixXd& A,
+        const Eigen::MatrixXd& B,
+        const Eigen::MatrixXd& E);
+
+    /**
+     * \brief Computes one RCIS or all RCISs of a hierarchy.
+     *
+     * \param[in] safe_set Constraints on [x; u], or on x alone (free u)
+     * \param[in] disturbance_set Constraints on w. With E, a valid empty set
+     * selects nominal mode; otherwise it must be bounded and match E.cols().
+     * Without E, a bounded nonempty set is ignored with a warning.
+     * \param[in] options Lasso parameters and output representation
+     * \return The resulting RCIS(s) as CISComponent object(s) ordered by increasing lambda
+     */
+    std::vector<CISComponent> Compute(
+        const HPolyhedron& safe_set,
+        const HPolyhedron& disturbance_set,
+        const CISOptions& options) const;
+
+    /** \brief Matrix-inequality overload with disturbance constraints. */
+    std::vector<CISComponent> Compute(
+        const Eigen::MatrixXd& Gxu,
+        const Eigen::VectorXd& Fxu,
+        const Eigen::MatrixXd& Gw,
+        const Eigen::VectorXd& Fw,
+        const CISOptions& options) const;
+
+    /**
+     * \brief Computes one CIS or all CISs of a hierarchy.
+     * Disturbance set omitted, the computation is nominal even if E was supplied.
+     *
+     * \param[in] safe_set Constraints on [x; u], or on x alone (free u)
+     * \param[in] options Lasso parameters and output representation
+     * \return The resulting CIS(s) as CISComponent object(s) ordered by increasing lambda
+     */
+    std::vector<CISComponent> Compute(
+        const HPolyhedron& safe_set,
+        const CISOptions& options) const;
+
+    /** \brief Matrix-inequality overload for a nominal system. */
+    std::vector<CISComponent> Compute(
+        const Eigen::MatrixXd& Gxu,
+        const Eigen::VectorXd& Fxu,
+        const CISOptions& options) const;
+
+    /** \brief Returns the Brunovsky transformation object. */
+    const BrunovskyTransformation& Transformation() const {
+        return transformation_;
+    }
+
+private:
+    /**
+     * \brief Computes one RCIS or all RCISs of a hierarchy.
+     * Core method. All the public functions route to this.
+     *
+     * \param[in] safe_set Constraints on [x; u], or on x alone (free u)
+     * \param[in] disturbance_set Valid bounded or empty disturbance set.
+     * With E it must match E.cols(); without E it is ignored.
+     * \param[in] options Lasso parameters and output representation
+     * \return The resulting RCIS(s) as CISComponent object(s) ordered by increasing lambda
+     */
+    std::vector<CISComponent> Compute_(
+        const HPolyhedron& safe_set,
+        const HPolyhedron& disturbance_set,
+        const CISOptions& options) const;
+
+    /** \brief Initializes component metadata, input maps, and lifted dynamics. */
+    CISComponent InitializeComponent_(
+        std::size_t tau,
+        std::size_t lambda,
+        bool is_implicit,
+        const Eigen::MatrixXd& H,
+        const Eigen::MatrixXd& P,
+        bool is_disturbed) const;
+
+    Eigen::MatrixXd A_;
+    Eigen::MatrixXd B_;
+    Eigen::MatrixXd E_;
+    BrunovskyTransformation transformation_;
+};
+
 }
